@@ -1,5 +1,6 @@
 
 #include "UTWeaponFix.h"
+#include "Engine/OverlapResult.h"
 #include "EngineUtils.h"
 #include "UTGameState.h"
 #include "UTPlayerController.h"
@@ -3091,7 +3092,7 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
         }
     }
     // 5. Deal damage
-    if (Hit.GetActor() != nullptr && Hit.GetActor()->bCanBeDamaged && bDealDamage)
+    if (Hit.GetActor() != nullptr && Hit.GetActor()->CanBeDamaged() && bDealDamage)
     {
         if ((GetLocalRole() == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
         {
@@ -3100,9 +3101,9 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
         // Cache impact point for ServerShield hitbox analysis (server only, read in ModifyDamage)
         LastHitscanImpactPoint = Hit.ImpactPoint;
         OnHitScanDamage(Hit, FireDir);
-        Hit.Actor->TakeDamage(InstantHitInfo[CurrentFireMode].Damage,
+        Hit.GetActor()->TakeDamage(InstantHitInfo[CurrentFireMode].Damage,
             FUTPointDamageEvent(InstantHitInfo[CurrentFireMode].Damage, Hit, FireDir,
-                InstantHitInfo[CurrentFireMode].DamageType, FireDir * GetImpartedMomentumMag(Hit.Actor.Get())),
+                InstantHitInfo[CurrentFireMode].DamageType, FireDir * GetImpartedMomentumMag(Hit.GetActor())),
             UTOwner->Controller, this);
     }
 
@@ -3176,7 +3177,7 @@ bool AUTWeaponFix::PutDown()
                     if (FireDbg())
                     {
                         UE_LOG(LogUTWeaponFix, Warning, TEXT("[FireDbg] PutDown graduate mode=%d role=%d local=%d held=%d retryActive=%d -> pending=%d"),
-                            i, (int32)Role, (UTOwner->IsLocallyControlled() ? 1 : 0),
+                            i, (int32)GetLocalRole(), (UTOwner->IsLocallyControlled() ? 1 : 0),
                             (bFireHeldByPlayer[i] ? 1 : 0),
                             (GetWorldTimerManager().IsTimerActive(RetryFireHandle[i]) ? 1 : 0),
                             (UTOwner->IsPendingFire(i) ? 1 : 0));
@@ -3309,7 +3310,7 @@ void AUTWeaponFix::FireCone()
         {
             // find appropriate rewind position, and test against trace from StartLocation to Hit.Location
             // NOTE: This uses GetRewindLocation, which in your Character override respects 'PredictionTime' on the server
-            FVector TargetLocation = ((PredictionTime > 0.f) && (Role == ROLE_Authority)) ? Target->GetRewindLocation(PredictionTime) : Target->GetActorLocation();
+            FVector TargetLocation = ((PredictionTime > 0.f) && (GetLocalRole() == ROLE_Authority)) ? Target->GetRewindLocation(PredictionTime) : Target->GetActorLocation();
 
             const FVector Diff = TargetLocation - SpawnLocation;
             if (Diff.Size() <= InstantHitInfo[CurrentFireMode].TraceRange && (Diff.GetSafeNormal() | FireDir) >= InstantHitInfo[CurrentFireMode].ConeDotAngle)
@@ -3369,7 +3370,7 @@ void AUTWeaponFix::FireCone()
                     NewHit->Location = HitLocation;
                     NewHit->Normal = (EndTrace - ClosestCapsulePoint).GetSafeNormal();
                     NewHit->ImpactNormal = NewHit->Normal;
-                    NewHit->Actor = Target;
+                    NewHit->GetActor() = Target;
                     NewHit->bBlockingHit = true;
                     NewHit->Component = Target->GetCapsuleComponent();
                     NewHit->ImpactPoint = ClosestPoint; //FIXME
@@ -3380,7 +3381,7 @@ void AUTWeaponFix::FireCone()
     }
     RealHits.Sort([](const FHitResult& A, const FHitResult& B) { return A.Time < B.Time; });
 
-    if (Role == ROLE_Authority)
+    if (GetLocalRole() == ROLE_Authority)
     {
         if (PS && (ShotsStatsName != NAME_None))
         {
@@ -3393,7 +3394,7 @@ void AUTWeaponFix::FireCone()
         // warn bot target, if any
         if (UTPC != nullptr)
         {
-            APawn* PawnTarget = RealHits.Num() > 0 ? Cast<APawn>(RealHits[0].Actor.Get()) : nullptr;
+            APawn* PawnTarget = RealHits.Num() > 0 ? Cast<APawn>(RealHits[0].GetActor()) : nullptr;
             if (PawnTarget != nullptr)
             {
                 // UTPC->LastShotTargetGuess = PawnTarget; // Disabled for transactional accuracy
@@ -3412,7 +3413,7 @@ void AUTWeaponFix::FireCone()
             AUTBot* B = Cast<AUTBot>(UTOwner->Controller);
             if (B != NULL)
             {
-                APawn* PawnTarget = RealHits.Num() > 0 ? Cast<APawn>(RealHits[0].Actor.Get()) : nullptr;
+                APawn* PawnTarget = RealHits.Num() > 0 ? Cast<APawn>(RealHits[0].GetActor()) : nullptr;
                 if (PawnTarget == NULL)
                 {
                     PawnTarget = Cast<APawn>(B->GetTarget());
@@ -3430,13 +3431,13 @@ void AUTWeaponFix::FireCone()
     }
     for (const FHitResult& Hit : RealHits)
     {
-        if (UTOwner && Hit.Actor != NULL && Hit.Actor->bCanBeDamaged)
+        if (UTOwner && Hit.GetActor() != NULL && Hit.GetActor()->bCanBeDamaged)
         {
-            if ((Role == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
+            if ((GetLocalRole() == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
             {
                 PS->ModifyStatsValue(HitsStatsName, 1);
             }
-            Hit.Actor->TakeDamage(InstantHitInfo[CurrentFireMode].Damage, FUTPointDamageEvent(InstantHitInfo[CurrentFireMode].Damage, Hit, FireDir, InstantHitInfo[CurrentFireMode].DamageType, FireDir * GetImpartedMomentumMag(Hit.Actor.Get())), UTOwner->Controller, this);
+            Hit.GetActor()->TakeDamage(InstantHitInfo[CurrentFireMode].Damage, FUTPointDamageEvent(InstantHitInfo[CurrentFireMode].Damage, Hit, FireDir, InstantHitInfo[CurrentFireMode].DamageType, FireDir * GetImpartedMomentumMag(Hit.Actor.Get())), UTOwner->Controller, this);
         }
     }
 }

@@ -1,6 +1,6 @@
 // SNCPlusHUDEditor.cpp - implementation of the live HUD layout editor.
-#include "HAL/PlatformApplicationMisc.h"
 #include "SNCPlusHUDEditor.h"
+#include "HAL/PlatformApplicationMisc.h"
 #include "NCPlusHUDLayout.h"
 #include "SNCPlusHUDPresetGallery.h"
 #include "UnrealTournament.h"

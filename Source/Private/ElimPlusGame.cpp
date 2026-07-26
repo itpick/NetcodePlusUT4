@@ -3224,7 +3224,7 @@ void AElimPlusGame::ExecuteOvertimeWave()
 		Hit.ImpactPoint = C->GetActorLocation();
 		Hit.Normal = FVector(0, 0, 1);
 		Hit.ImpactNormal = FVector(0, 0, 1);
-		Hit.GetActor() = C;
+		Hit.HitObjectHandle = FActorInstanceHandle(C);
 		Hit.Component = Cast<UPrimitiveComponent>(C->GetRootComponent());
 		FUTPointDamageEvent DamageEvent(
 			DamageToApply,
@@ -3662,8 +3662,8 @@ void AElimPlusGame::RebalanceTeamsForMatchStart()
 		if (!C) continue;
 
 		FElimPlusBalanceInput In;
-		In.UniqueId = UTPS->UniqueId.IsValid()
-			? UTPS->UniqueId.ToString()
+		In.UniqueId = UTPS->GetUniqueId().IsValid()
+			? UTPS->GetUniqueId().ToString()
 			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 		Inputs.Add(In);
 		ControllersByIndex.Add(C);
@@ -3723,9 +3723,9 @@ void AElimPlusGame::RebalanceTeamsForMatchStart()
 			if (!PS) continue;
 
 			int32 Elo = 1400;
-			if (PS->UniqueId.IsValid())
+			if (PS->GetUniqueId().IsValid())
 			{
-				Elo = RatingSystem->GetCachedElo(PS->UniqueId.ToString());
+				Elo = RatingSystem->GetCachedElo(PS->GetUniqueId().ToString());
 			}
 			else
 			{
@@ -3787,14 +3787,14 @@ void AElimPlusGame::MidGameShufflePPR()
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
 		AController* C = Cast<AController>(UTPS->GetOwner());
 		if (!C) continue;
 
 		FElimPlusBalanceInput In;
-		In.UniqueId = UTPS->UniqueId.IsValid()
-			? UTPS->UniqueId.ToString()
+		In.UniqueId = UTPS->GetUniqueId().IsValid()
+			? UTPS->GetUniqueId().ToString()
 			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		const int32* Rounds = PerPlayerMatchPPRRoundCount.Find(UTPS);

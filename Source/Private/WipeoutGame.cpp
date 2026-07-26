@@ -2311,7 +2311,7 @@ void AUWipeoutGame::ScoreDamage_Implementation(int32 DamageAmount, AUTPlayerStat
 	if (Victim && Victim->GetUTCharacter())
 	{
 		AUTCharacter* VictimChar = Victim->GetUTCharacter();
-		int32 TotalHP = VictimChar->Health + FMath::FloorToInt(VictimChar->GetArmorAmount());
+		int32 TotalHP = VictimChar->Health + FMath::FloorToInt((float)VictimChar->GetArmorAmount());
 		ActualDamage = FMath::Min(DamageAmount, TotalHP);
 	}
 
@@ -3190,7 +3190,7 @@ void AUWipeoutGame::ExecuteOvertimeWave()
 		Hit.ImpactPoint = C->GetActorLocation();
 		Hit.Normal = FVector(0, 0, 1);
 		Hit.ImpactNormal = FVector(0, 0, 1);
-		Hit.GetActor() = C;
+		Hit.HitObjectHandle = FActorInstanceHandle(C);
 		Hit.Component = Cast<UPrimitiveComponent>(C->GetRootComponent());
 
 		FUTPointDamageEvent DamageEvent(
@@ -3498,7 +3498,7 @@ void AUWipeoutGame::Logout(AController* Exiting)
 		if (Exiting)
 		{
 			AUTPlayerState* ExitingPS = Cast<AUTPlayerState>(Exiting->PlayerState);
-			if (ExitingPS && !ExitingPS->IsABot() && !ExitingPS->bOnlySpectator)
+			if (ExitingPS && !ExitingPS->IsABot() && !ExitingPS->IsOnlyASpectator())
 			{
 				UE_LOG(LogGameMode, Warning, TEXT("Wipeout: Player %s disconnected. Pausing match."), *ExitingPS->GetPlayerName());
 				SetPause(nullptr);
