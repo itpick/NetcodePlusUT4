@@ -228,8 +228,6 @@ public:
 	// -------- Replay opt-in (FlagRun does this) --------
 	virtual bool SupportsInstantReplay() const override;
 
-	UFUNCTION(BlueprintNativeEvent)
-	bool CanSpectate(APlayerController* Viewer, APlayerState* ViewTarget);
 	virtual bool CanSpectate_Implementation(APlayerController* Viewer, APlayerState* ViewTarget) override;
 
 	/** Optional HUD to use while replay is active (can be left null). */

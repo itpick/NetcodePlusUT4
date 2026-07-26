@@ -559,8 +559,6 @@ public:
 
 	virtual bool SupportsInstantReplay() const override;
 
-	UFUNCTION(BlueprintNativeEvent)
-	bool CanSpectate(APlayerController* Viewer, APlayerState* ViewTarget);
 	virtual bool CanSpectate_Implementation(APlayerController* Viewer, APlayerState* ViewTarget) override;
 
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
