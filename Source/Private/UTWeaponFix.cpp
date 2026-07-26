@@ -4361,7 +4361,7 @@ void AUTWeaponFix::ServerProjectileHitClaim_Implementation(AUTCharacter* Claimed
 	// targetMoved = how far the target's authoritative capsule advanced past where the shooter
 	// hit it == roughly how badly the un-compensated server test would have missed (> capsule
 	// radius ~46u means this hit ONLY landed because of lag comp).
-	const float TargetPingMs = ClaimedTarget->GetPlayerState() ? ClaimedTarget->PlayerState->ExactPing : -1.f;
+	const float TargetPingMs = ClaimedTarget->GetPlayerState<AUTPlayerState>() ? ClaimedTarget->GetPlayerState<AUTPlayerState>()->ExactPing : -1.f;
 	const float TargetMoved = (ClaimedTarget->GetActorLocation() - BestCenter).Size();
 
 	if (bFromGrace)
