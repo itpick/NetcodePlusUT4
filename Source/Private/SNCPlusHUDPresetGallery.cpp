@@ -518,8 +518,8 @@ FReply SNCPlusHUDPresetGallery::OnSaveDialogConfirmClicked()
 	// UE 4.15 has no FString::TrimStartAndEnd. Copy + use the in-place
 	// Trim() / TrimTrailing() pair instead. Both mutate the string in place.
 	FString TrimmedName = Name;
-	TrimmedName.Trim();
-	TrimmedName.TrimTrailing();
+	TrimmedName.TrimStartAndEnd();
+	TrimmedName.TrimEnd();
 	if (TrimmedName.IsEmpty())
 	{
 		FMessageDialog::Open(EAppMsgType::Ok,

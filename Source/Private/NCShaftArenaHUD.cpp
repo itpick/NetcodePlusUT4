@@ -52,9 +52,9 @@ void ANCShaftArenaHUD::DrawTeamScoreBar(AUTGameState* GS)
 	for (APlayerState* APS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
-		if (!P1 || UTPS->Score > P1->Score)      { P2 = P1; P1 = UTPS; }
-		else if (!P2 || UTPS->Score > P2->Score) { P2 = UTPS; }
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
+		if (!P1 || UTPS->GetScore() > P1->GetScore())      { P2 = P1; P1 = UTPS; }
+		else if (!P2 || UTPS->GetScore() > P2->GetScore()) { P2 = UTPS; }
 	}
 	if (!P1 || !P2) return;
 
@@ -72,8 +72,8 @@ void ANCShaftArenaHUD::DrawTeamScoreBar(AUTGameState* GS)
 
 	const FString P1Name = P1->GetPlayerName();
 	const FString P2Name = P2->GetPlayerName();
-	const int32 Score1 = int32(P1->Score);
-	const int32 Score2 = int32(P2->Score);
+	const int32 Score1 = int32(P1->GetScore());
+	const int32 Score2 = int32(P2->GetScore());
 
 	const float ScoreScale = NCPlusHUDDrawCall::GetScale(TEXT("scorebar"));
 	const float BarWidth = 220.f * RenderScale * ScoreScale;

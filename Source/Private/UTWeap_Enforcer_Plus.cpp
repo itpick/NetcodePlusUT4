@@ -19,12 +19,12 @@ AUTWeap_Enforcer_Plus::AUTWeap_Enforcer_Plus(const FObjectInitializer& OI)
 
 float AUTWeap_Enforcer_Plus::GetRewindSeconds() const
 {
-	if (!UTOwner || !UTOwner->PlayerState)
+	if (!UTOwner || !UTOwner->GetPlayerState())
 	{
 		return 0.f;
 	}
 
-	const AUTPlayerState* PS = Cast<AUTPlayerState>(UTOwner->PlayerState);
+	const AUTPlayerState* PS = Cast<AUTPlayerState>(UTOwner->GetPlayerState());
 	if (!PS)
 	{
 		return 0.f;
@@ -114,7 +114,7 @@ void AUTWeap_Enforcer_Plus::HitScanTrace(const FVector& StartLocation, const FVe
 		}
 
 		// Rewind target to its position at fire time (server only; client uses current).
-		FVector TargetLocation = (ActualPredictionTime > 0.f && Role == ROLE_Authority)
+		FVector TargetLocation = (ActualPredictionTime > 0.f && GetLocalRole() == ROLE_Authority)
 			? Target->GetRewindLocation(ActualPredictionTime)
 			: Target->GetActorLocation();
 
@@ -170,7 +170,7 @@ void AUTWeap_Enforcer_Plus::HitScanTrace(const FVector& StartLocation, const FVe
 		Hit.Location = BestPoint + BackDist * (StartLocation - EndTrace).GetSafeNormal();
 		Hit.Normal = (Hit.Location - BestCapsulePoint).GetSafeNormal();
 		Hit.ImpactNormal = Hit.Normal;
-		Hit.Actor = BestTarget;
+		Hit.GetActor() = BestTarget;
 		Hit.bBlockingHit = true;
 		Hit.Component = BestTarget->GetCapsuleComponent();
 		Hit.ImpactPoint = BestPoint;

@@ -94,7 +94,7 @@ bool UNCPlusHUDWidget_Accuracy::ShouldDraw_Implementation(bool bShowScores)
 	if (bShowScores) return false;
 	if (!IsValid(UTHUDOwner) || !IsValid(UTHUDOwner->UTPlayerOwner)) return false;
 	AUTPlayerState* PS = UTHUDOwner->UTPlayerOwner->UTPlayerState;
-	if (!IsValid(PS) || PS->bOnlySpectator) return false;
+	if (!IsValid(PS) || PS->IsOnlyASpectator()) return false;
 
 	// Opt-in: the widget renders only when the user has placed it via nchud —
 	// EXCEPT shaft arena, where accuracy is on by default. That default is a MODE
@@ -190,8 +190,8 @@ void UNCPlusHUDWidget_Accuracy::Draw_Implementation(float DeltaTime)
 	{
 		if (ANCAccuracyStatsReplicator* Rep = GetAccuracyReplicator())
 		{
-			const FString PlayerId = PS->UniqueId.IsValid()
-				? PS->UniqueId.ToString()
+			const FString PlayerId = PS->GetUniqueId().IsValid()
+				? PS->GetUniqueId().ToString()
 				: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 			Hits  = Rep->GetHitsForPlayer (PlayerId, HitsStat);
 			Shots = Rep->GetShotsForPlayer(PlayerId, ShotsStat);

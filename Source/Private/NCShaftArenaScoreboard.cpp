@@ -96,8 +96,8 @@ void UNCShaftArenaScoreboard::DrawPlayerScore(AUTPlayerState* PS, float XOffset,
 		UTHUDOwner->TinyFont, 1.0f, 1.0f, DrawColor, ETextHorzPos::Center, ETextVertPos::Center);
 
 	// Build replicator key once - both accuracy and damage come from it.
-	const FString PlayerId = PS->UniqueId.IsValid()
-		? PS->UniqueId.ToString()
+	const FString PlayerId = PS->GetUniqueId().IsValid()
+		? PS->GetUniqueId().ToString()
 		: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 	ANCShaftArenaStatsReplicator* Rep = FindNCShaftArenaStatsReplicator(GetWorld());
 	const bool bIsAuthority = GetWorld() && GetWorld()->GetNetMode() != NM_Client;
@@ -213,9 +213,9 @@ void UNCShaftArenaScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerStat
 		float NumPlayers = 0.0f;
 		for (int32 i = 0; i < UTGameState->PlayerArray.Num(); i++)
 		{
-			if (!UTGameState->PlayerArray[i]->bIsSpectator
-				&& !UTGameState->PlayerArray[i]->bOnlySpectator
-				&& !UTGameState->PlayerArray[i]->bIsABot)
+			if (!UTGameState->PlayerArray[i]->IsSpectator()
+				&& !UTGameState->PlayerArray[i]->IsOnlyASpectator()
+				&& !UTGameState->PlayerArray[i]->IsABot())
 			{
 				if (!UTGameState->bOnlyTeamCanVoteKick
 					|| UTGameState->OnSameTeam(PlayerState, UTGameState->PlayerArray[i]))
@@ -284,7 +284,7 @@ void UNCShaftArenaScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerStat
 		YOffset + ColumnY, RenderScale);
 	if (UTGameState && UTGameState->HasMatchStarted())
 	{
-		if (PlayerState->bPendingTeamSwitch && !PlayerState->bIsABot)
+		if (PlayerState->bPendingTeamSwitch && !PlayerState->IsABot())
 		{
 			DrawText(TeamSwapText, XOffset + (ScaledCellWidth * ColumnHeaderScoreX),
 				YOffset + ColumnY, UTHUDOwner->SmallFont, RenderScale, 1.0f,

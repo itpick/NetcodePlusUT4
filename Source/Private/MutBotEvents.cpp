@@ -176,9 +176,9 @@ void AMutBotEvents::Mutate_Implementation(const FString& MutateString, APlayerCo
 
 		// Get UT4 player ID from UniqueId
 		FString Ut4Id;
-		if (UTPS->UniqueId.IsValid())
+		if (UTPS->GetUniqueId().IsValid())
 		{
-			Ut4Id = UTPS->UniqueId.GetUniqueNetId()->ToString();
+			Ut4Id = UTPS->GetUniqueId().GetUniqueNetId()->ToString();
 		}
 
 		// Build JSON
@@ -280,7 +280,7 @@ void AMutBotEvents::ScoreKill_Implementation(AController* Killer, AController* O
 void AMutBotEvents::ScoreKill_PostHighlights(AUTPlayerState* KillerPS)
 {
 	if (KillerPS == nullptr || BotApiUrl.IsEmpty()) return;
-	if (KillerPS->bIsABot) return;       // don't flood chat in bot-heavy matches
+	if (KillerPS->IsABot()) return;       // don't flood chat in bot-heavy matches
 
 	// MONSTER KILL — fire for level 4 AND every subsequent kill in the same
 	// engine multikill window (5, 6, ...). Multiplier turns those continuations
@@ -622,7 +622,7 @@ FString AMutBotEvents::BuildPlayerListJson() const
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
 		// With host-controlled matches, "ready" = connected and on a team.
 		// GetTeamNum() returns 255 if not on a team yet.
@@ -630,8 +630,8 @@ FString AMutBotEvents::BuildPlayerListJson() const
 
 		TSharedRef<FJsonObject> PlayerObj = MakeShareable(new FJsonObject());
 		PlayerObj->SetStringField(TEXT("Name"), UTPS->GetPlayerName());
-		PlayerObj->SetNumberField(TEXT("Index"), UTPS->PlayerId);
-		PlayerObj->SetNumberField(TEXT("Id"), UTPS->PlayerId);
+		PlayerObj->SetNumberField(TEXT("Index"), UTPS->GetPlayerId());
+		PlayerObj->SetNumberField(TEXT("Id"), UTPS->GetPlayerId());
 		PlayerObj->SetBoolField(TEXT("Ready"), bReady);
 		PlayerObj->SetStringField(TEXT("Password"), TEXT("")); // Not available server-side
 		PlayerObj->SetNumberField(TEXT("Team"), UTPS->GetTeamNum());

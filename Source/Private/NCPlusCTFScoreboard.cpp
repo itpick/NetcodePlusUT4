@@ -215,8 +215,8 @@ void UNCPlusCTFScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XO
 	if (!PlayerState) return;
 
 	ACTFStatsReplicator* Rep = FindStatsReplicator();
-	const FString PlayerId = PlayerState->UniqueId.IsValid()
-		? PlayerState->UniqueId.ToString()
+	const FString PlayerId = PlayerState->GetUniqueId().IsValid()
+		? PlayerState->GetUniqueId().ToString()
 		: FString::Printf(TEXT("BOT:%s"), *PlayerState->GetPlayerName());
 	const FCtfColumnLayout& L = GetActiveLayout();
 	const bool bInstagib = (&L == &InstagibLayout);
@@ -324,7 +324,7 @@ void UNCPlusCTFScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 			AUTPlayerState* PlayerState = Cast<AUTPlayerState>(UTGameState->PlayerArray[i]);
 			if (PlayerState)
 			{
-				if (!PlayerState->bOnlySpectator)
+				if (!PlayerState->IsOnlyASpectator())
 				{
 					if (PlayerState->GetTeamNum() == Team)
 					{
@@ -522,7 +522,7 @@ void UNCPlusCTFScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState,
 	FLinearColor DrawColor = GetPlayerColorFor(PlayerState);
 
 	// Null-guarded local-owner check (see feedback_scoreboard_drawplayer_null_guards.md).
-	int32 Ping = PlayerState->Ping * 4;
+	int32 Ping = PlayerState->GetCompressedPing() * 4;
 	const bool bIsOwner = (UTHUDOwner && UTHUDOwner->UTPlayerOwner
 		&& UTHUDOwner->UTPlayerOwner->UTPlayerState == PlayerState);
 	if (bIsOwner)
@@ -545,9 +545,9 @@ void UNCPlusCTFScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState,
 		float NumPlayers = 0.0f;
 		for (int32 i = 0; i < UTGameState->PlayerArray.Num(); i++)
 		{
-			if (!UTGameState->PlayerArray[i]->bIsSpectator
-				&& !UTGameState->PlayerArray[i]->bOnlySpectator
-				&& !UTGameState->PlayerArray[i]->bIsABot)
+			if (!UTGameState->PlayerArray[i]->IsSpectator()
+				&& !UTGameState->PlayerArray[i]->IsOnlyASpectator()
+				&& !UTGameState->PlayerArray[i]->IsABot())
 			{
 				if (!UTGameState->bOnlyTeamCanVoteKick
 					|| UTGameState->OnSameTeam(PlayerState, UTGameState->PlayerArray[i]))
@@ -616,7 +616,7 @@ void UNCPlusCTFScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState,
 		YOffset + ColumnY, RenderScale);
 	if (UTGameState && UTGameState->HasMatchStarted())
 	{
-		if (PlayerState->bPendingTeamSwitch && !PlayerState->bIsABot)
+		if (PlayerState->bPendingTeamSwitch && !PlayerState->IsABot())
 		{
 			DrawText(TeamSwapText, XOffset + (ScaledCellWidth * ColumnHeaderScoreX),
 				YOffset + ColumnY, UTHUDOwner->SmallFont, RenderScale, 1.0f,

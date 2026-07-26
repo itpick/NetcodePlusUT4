@@ -139,7 +139,7 @@ void ANCShaftArenaGame::InitGame(const FString& MapName, const FString& Options,
 	// Stats replicator - server-only StatsData (LinkHits/LinkShots) + DamageDone
 	// don't reach clients without this. Spawn here so clients see it before
 	// the first scoreboard render.
-	if (Role == ROLE_Authority && !StatsReplicator)
+	if (GetLocalRole() == ROLE_Authority && !StatsReplicator)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
@@ -154,7 +154,7 @@ void ANCShaftArenaGame::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (Role != ROLE_Authority) return;
+	if (GetLocalRole() != ROLE_Authority) return;
 
 	RatingSystem = MakeUnique<FNCShaftArenaRatingSystem>();
 	FNCShaftArenaRatingSystem::InitDatabase(GetWorld());
@@ -196,7 +196,7 @@ void ANCShaftArenaGame::PostLogin(APlayerController* NewPlayer)
 
 	// Early plugin-version check — kicks mismatched clients within 10s of join.
 	NCPlusVersionGate::SpawnFor(NewPlayer);
-	if (Role != ROLE_Authority || !RatingSystem || !NewPlayer) return;
+	if (GetLocalRole() != ROLE_Authority || !RatingSystem || !NewPlayer) return;
 	AUTPlayerState* PS = Cast<AUTPlayerState>(NewPlayer->PlayerState);
 	if (!PS) return;
 	const FString UniqueId = PS->StatsID.IsEmpty() ? PS->GetPlayerName() : PS->StatsID;
@@ -206,7 +206,7 @@ void ANCShaftArenaGame::PostLogin(APlayerController* NewPlayer)
 void ANCShaftArenaGame::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
-	if (Role == ROLE_Authority && RatingSystem)
+	if (GetLocalRole() == ROLE_Authority && RatingSystem)
 	{
 		RatingSystem->SnapshotMatchStart();
 	}
@@ -215,7 +215,7 @@ void ANCShaftArenaGame::HandleMatchHasStarted()
 void ANCShaftArenaGame::HandleMatchHasEnded()
 {
 	Super::HandleMatchHasEnded();
-	if (Role != ROLE_Authority || !RatingSystem || !UTGameState) return;
+	if (GetLocalRole() != ROLE_Authority || !RatingSystem || !UTGameState) return;
 
 	// Engine routes HandleMatchHasEnded twice in some paths. Without this guard
 	// rating math, DB write, AND upload would fire twice — corrupting counters
@@ -228,9 +228,9 @@ void ANCShaftArenaGame::HandleMatchHasEnded()
 	for (APlayerState* APS : UTGameState->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
-		if (!Winner || UTPS->Score > Winner->Score)      { Loser = Winner; Winner = UTPS; }
-		else if (!Loser || UTPS->Score > Loser->Score)   { Loser = UTPS; }
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
+		if (!Winner || UTPS->GetScore() > Winner->GetScore())      { Loser = Winner; Winner = UTPS; }
+		else if (!Loser || UTPS->GetScore() > Loser->GetScore())   { Loser = UTPS; }
 	}
 
 	if (Winner && Loser)
@@ -244,7 +244,7 @@ void ANCShaftArenaGame::HandleMatchHasEnded()
 
 		RatingSystem->RecordMatchResult(
 			WinnerId, LoserId,
-			Winner->Score, Loser->Score,
+			Winner->GetScore(), Loser->GetScore(),
 			WinnerAcc, LoserAcc,
 			WinnerStreak, LoserStreak);
 		RatingSystem->Flush(GetWorld());
@@ -253,12 +253,12 @@ void ANCShaftArenaGame::HandleMatchHasEnded()
 		FNCShaftArenaMatchInput UploadIn;
 		UploadIn.WinnerId       = WinnerId;
 		UploadIn.WinnerName     = Winner->GetPlayerName();
-		UploadIn.WinnerScore    = Winner->Score;
+		UploadIn.WinnerScore    = Winner->GetScore();
 		UploadIn.WinnerStreak   = WinnerStreak;
 		UploadIn.WinnerAccuracy = WinnerAcc;
 		UploadIn.LoserId        = LoserId;
 		UploadIn.LoserName      = Loser->GetPlayerName();
-		UploadIn.LoserScore     = Loser->Score;
+		UploadIn.LoserScore     = Loser->GetScore();
 		UploadIn.LoserStreak    = LoserStreak;
 		UploadIn.LoserAccuracy  = LoserAcc;
 		const FString Json = RatingSystem->BuildResultPayload(GetWorld(), UploadIn);
@@ -347,8 +347,8 @@ bool ANCShaftArenaGame::CheckScore_Implementation(AUTPlayerState* Scorer)
 	for (APlayerState* APS : UTGameState->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
-		const int32 S = int32(UTPS->Score);
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
+		const int32 S = int32(UTPS->GetScore());
 		if (S > LeaderScore) { RunnerScore = LeaderScore; LeaderScore = S; Leader = UTPS; }
 		else if (S > RunnerScore) { RunnerScore = S; }
 	}
@@ -390,15 +390,15 @@ void ANCShaftArenaGame::BuildMatchSummary(FNCMatchSummary& Out) const
 	for (APlayerState* APS : UTGameState->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
 		FNCPlayerSummary P;
 		P.UniqueId   = UTPS->StatsID.IsEmpty() ? UTPS->GetPlayerName() : UTPS->StatsID;
 		P.PlayerName = UTPS->GetPlayerName();
-		P.Score      = UTPS->Score;
+		P.Score      = UTPS->GetScore();
 		P.Kills      = UTPS->Kills;
 		P.Deaths     = UTPS->Deaths;
-		P.Ping       = UTPS->Ping;
+		P.Ping       = UTPS->GetCompressedPing();
 		P.Team       = UTPS->Team ? UTPS->Team->TeamIndex : 0;
 		P.WeaponAccuracy.Add(FName(TEXT("LinkGun")),
 			FIntPoint(UTPS->GetStatsValue(NAME_LinkShots), UTPS->GetStatsValue(NAME_LinkHits)));

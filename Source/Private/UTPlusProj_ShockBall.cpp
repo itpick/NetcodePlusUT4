@@ -66,7 +66,7 @@ static FORCEINLINE bool ShockDbg()
 
 static FORCEINLINE const TCHAR* ShockDbgSide(const AActor* A)
 {
-	return (A && A->Role == ROLE_Authority) ? TEXT("SRV") : TEXT("CLI");
+	return (A && A->GetLocalRole() == ROLE_Authority) ? TEXT("SRV") : TEXT("CLI");
 }
 
 // Zero-length WorldStatic sphere sweep at the core's location — true if embedded in
@@ -110,7 +110,7 @@ void AUTPlusProj_ShockBall::NotifyClientSideHit(AUTPlayerController* InstigatedB
 
 void AUTPlusProj_ShockBall::PerformCombo(class AController* InstigatedBy, class AActor* DamageCauser)
 {
-	if (ShockDbg() && Role == ROLE_Authority)
+	if (ShockDbg() && GetLocalRole() == ROLE_Authority)
 	{
 		UE_LOG(LogShockDbg, Warning, TEXT("[ShockDbg/SRV] COMBO @%s vel=%.1f geoUnder=%d age=%.3f"),
 			*GetActorLocation().ToString(), ProjectileMovement ? ProjectileMovement->Velocity.Size() : -1.f,
@@ -118,7 +118,7 @@ void AUTPlusProj_ShockBall::PerformCombo(class AController* InstigatedBy, class 
 	}
 
 	// Consume extra ammo for the combo
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		AUTGameMode* GameMode = GetWorld()->GetAuthGameMode<AUTGameMode>();
 		AUTWeapon* Weapon = Cast<AUTWeapon>(DamageCauser);
@@ -171,7 +171,7 @@ void AUTPlusProj_ShockBall::DamageImpactedActor_Implementation(AActor* OtherActo
 	// or embeds in a static-mesh wall inflates ShockRifleHits. Zero the credit for non-pawn impacts
 	// so only player hits count. Pawn hits keep the default credit; the combo/radial path in Explode
 	// resets StatsHitCredit itself, so this affects only the buggy direct-impact line.
-	if (Role == ROLE_Authority && Cast<APawn>(OtherActor) == nullptr)
+	if (GetLocalRole() == ROLE_Authority && Cast<APawn>(OtherActor) == nullptr)
 	{
 		StatsHitCredit = 0.f;
 	}
@@ -193,7 +193,7 @@ void AUTPlusProj_ShockBall::BeginPlay()
 	// No fake exists in demo playback, so the real must become the visual — undo
 	// the hidden state that was recorded into the demo stream.
 	UWorld* W = GetWorld();
-	const bool bInReplay = (W && W->DemoNetDriver && W->DemoNetDriver->IsPlaying());
+	const bool bInReplay = (W && W->GetDemoNetDriver() && W->GetDemoNetDriver()->IsPlaying());
 	if (bInReplay)
 	{
 		SetActorHiddenInGame(false);
@@ -218,7 +218,7 @@ void AUTPlusProj_ShockBall::BeginPlay()
 		bHasCachedFireDirection = true;
 	}
 
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		// Server tick rate. Shipped = fixed 240Hz. Override via ncp.ShockServerTickHz:
 		//   0  = 240Hz (shipped);  >0 = that Hz (clamped 30..720);  <0 = unset (tick every frame, stock-like).
@@ -277,7 +277,7 @@ void AUTPlusProj_ShockBall::Tick(float DeltaTime)
 	// re-inflation is exactly what kept Speed high and starved the old velocity-gated stuck check.
 	bool bServerEmbedded = false;
 	FHitResult StuckHit;
-	if (Role == ROLE_Authority && CollisionComp && !bExploded)
+	if (GetLocalRole() == ROLE_Authority && CollisionComp && !bExploded)
 	{
 		const FVector Loc = GetActorLocation();
 		const float ProbeRadius = FMath::Max(2.f, CollisionComp->GetScaledSphereRadius());
@@ -292,7 +292,7 @@ void AUTPlusProj_ShockBall::Tick(float DeltaTime)
 		&& bHasCachedFireDirection && ProjectileMovement
 		&& !ProjectileMovement->Velocity.IsNearlyZero()
 		&& FMath::IsNearlyZero(ProjectileMovement->ProjectileGravityScale)
-		&& (bFakeClientProjectile || Role == ROLE_Authority)
+		&& (bFakeClientProjectile || GetLocalRole() == ROLE_Authority)
 		&& !bServerEmbedded)
 	{
 		const float Speed = ProjectileMovement->Velocity.Size();
@@ -307,7 +307,7 @@ void AUTPlusProj_ShockBall::Tick(float DeltaTime)
 	// a wall (still moving) or a slomo core hovering in open space (not touching geometry) is never
 	// wrongly detonated. Velocity-INDEPENDENT on purpose — the drift correction above keeps Speed high
 	// on an embedded core, so the previous IsNearlyZero(5.0) velocity gate never fired.
-	if (Role == ROLE_Authority && CollisionComp && !bExploded)
+	if (GetLocalRole() == ROLE_Authority && CollisionComp && !bExploded)
 	{
 		const FVector Loc = GetActorLocation();
 		const bool bNotTravelling = FVector::DistSquared(Loc, LastStuckProgressLoc)
@@ -536,12 +536,12 @@ void AUTPlusProj_ShockBall::ProcessHit_Implementation(AActor* OtherActor, UPrimi
 	if (ShockDbg() && OtherActor && OtherActor != this)
 	{
 		AUTProjectile* OtherProj = Cast<AUTProjectile>(OtherActor);
-		if (OtherProj != nullptr || (OtherActor->bHidden != 0))
+		if (OtherProj != nullptr || (OtherActor->IsHidden() != 0))
 		{
 			UE_LOG(LogShockDbg, Warning,
 				TEXT("[ShockDbg/%s] PROC-HIT other=%s(%s) otherHidden=%d otherFake=%d hit@%s self@%s selfFake=%d"),
 				ShockDbgSide(this), *OtherActor->GetName(), *OtherActor->GetClass()->GetName(),
-				(OtherActor->bHidden != 0) ? 1 : 0, (OtherProj && OtherProj->bFakeClientProjectile) ? 1 : 0,
+				(OtherActor->IsHidden() != 0) ? 1 : 0, (OtherProj && OtherProj->bFakeClientProjectile) ? 1 : 0,
 				*HitLocation.ToString(), *GetActorLocation().ToString(), bFakeClientProjectile ? 1 : 0);
 		}
 	}
@@ -557,7 +557,7 @@ void AUTPlusProj_ShockBall::PostNetReceiveLocationAndRotation()
 	const FVector PreLoc = GetActorLocation();
 	const bool bHadFake = (MyFakeProjectile != nullptr);
 	Super::PostNetReceiveLocationAndRotation();
-	if (ShockDbg() && !bHadFake && !bFakeClientProjectile && Role != ROLE_Authority)
+	if (ShockDbg() && !bHadFake && !bFakeClientProjectile && GetLocalRole() != ROLE_Authority)
 	{
 		const float Jump = FVector::Dist(PreLoc, GetActorLocation());
 		if (Jump > 20.f)

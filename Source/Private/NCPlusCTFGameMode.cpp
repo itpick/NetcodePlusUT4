@@ -243,9 +243,9 @@ void ANCPlusCTFGameMode::PostLogin(APlayerController* NewPlayer)
 	if (!RatingSystem.IsValid()) return;
 
 	AUTPlayerState* UTPS = Cast<AUTPlayerState>(NewPlayer->PlayerState);
-	if (UTPS && UTPS->UniqueId.IsValid())
+	if (UTPS && UTPS->GetUniqueId().IsValid())
 	{
-		const FString Uid = UTPS->UniqueId.ToString();
+		const FString Uid = UTPS->GetUniqueId().ToString();
 		RatingSystem->LoadPlayerFromDB(GetWorld(), Uid);
 		// Mid-match joiner: stamp first-seen time for the leaver presence calc.
 		// (Warmup joiners are stamped en-masse in HandleMatchHasStarted.) Keep
@@ -281,12 +281,12 @@ bool ANCPlusCTFGameMode::ChangeTeam(AController* Player, uint8 NewTeam, bool bBr
 	if (bIsPugMatch && PugRosterTeam.Num() > 0 && Player && HasAuthority())
 	{
 		AUTPlayerState* PS = Cast<AUTPlayerState>(Player->PlayerState);
-		if (PS && !PS->bOnlySpectator && PS->UniqueId.IsValid())
+		if (PS && !PS->IsOnlyASpectator() && PS->GetUniqueId().IsValid())
 		{
 			// Match on UniqueId.ToString() — the same id this gamemode keys the
 			// rating DB on in PostLogin, which equals MutBotEvents' Ut4Id and the
 			// bot's players.ut4_id.
-			if (const uint8* Assigned = PugRosterTeam.Find(PS->UniqueId.ToString().ToLower()))
+			if (const uint8* Assigned = PugRosterTeam.Find(PS->GetUniqueId().ToString().ToLower()))
 			{
 				const uint8 Want = *Assigned;
 				// Already on the right side — accept without re-suiciding them
@@ -341,8 +341,8 @@ void ANCPlusCTFGameMode::HandleMatchHasEnded()
 	for (APlayerState* APS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
-		if (!UTPS->UniqueId.IsValid()) continue;  // bot
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
+		if (!UTPS->GetUniqueId().IsValid()) continue;  // bot
 		if (UTPS->GetTeamNum() > 1) continue;      // no valid CTF team slot
 
 		FNCPlusCTFPlayerInput P;
@@ -390,10 +390,10 @@ void ANCPlusCTFGameMode::Logout(AController* Exiting)
 	if (HasAuthority() && Exiting && RatingSystem.IsValid() && !bRatingFlushedThisMatch)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(Exiting->PlayerState);
-		if (UTPS && !UTPS->bIsABot && !UTPS->bOnlySpectator
-			&& UTPS->UniqueId.IsValid() && UTPS->GetTeamNum() <= 1)
+		if (UTPS && !UTPS->IsABot() && !UTPS->IsOnlyASpectator()
+			&& UTPS->GetUniqueId().IsValid() && UTPS->GetTeamNum() <= 1)
 		{
-			const FString Uid = UTPS->UniqueId.ToString();
+			const FString Uid = UTPS->GetUniqueId().ToString();
 
 			const float Now      = GetWorld()->GetTimeSeconds();
 			const float JoinTime = PlayerJoinWorldTime.FindRef(Uid);   // 0.f if unknown
@@ -429,10 +429,10 @@ void ANCPlusCTFGameMode::Logout(AController* Exiting)
 		&& (CTFGameState->IsMatchInProgress() || CTFGameState->IsMatchInOvertime()))
 	{
 		AUTPlayerState* LeavePS = Cast<AUTPlayerState>(Exiting->PlayerState);
-		if (LeavePS && !LeavePS->bIsABot && !LeavePS->bOnlySpectator
-			&& LeavePS->UniqueId.IsValid() && LeavePS->GetTeamNum() <= 1)
+		if (LeavePS && !LeavePS->IsABot() && !LeavePS->IsOnlyASpectator()
+			&& LeavePS->GetUniqueId().IsValid() && LeavePS->GetTeamNum() <= 1)
 		{
-			BeginOrHoldAutoPause(LeavePS->UniqueId.ToString(), LeavePS->GetPlayerName());
+			BeginOrHoldAutoPause(LeavePS->GetUniqueId().ToString(), LeavePS->GetPlayerName());
 		}
 	}
 
@@ -447,8 +447,8 @@ APlayerState* ANCPlusCTFGameMode::FindAutoPauseMarker() const
 	for (APlayerState* PS : CTFGameState->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (UTPS && !UTPS->bOnlySpectator && UTPS->UniqueId.IsValid()
-			&& !AutoPauseAwaitIds.Contains(UTPS->UniqueId.ToString()))
+		if (UTPS && !UTPS->IsOnlyASpectator() && UTPS->GetUniqueId().IsValid()
+			&& !AutoPauseAwaitIds.Contains(UTPS->GetUniqueId().ToString()))
 		{
 			return UTPS;
 		}
@@ -473,7 +473,7 @@ void ANCPlusCTFGameMode::BeginOrHoldAutoPause(const FString& LeaverId, const FSt
 		return;
 	}
 
-	WS->Pauser = Marker;   // engine world-pause; replicated, clients show paused
+	WS->SetPauserPlayerState(Marker);   // engine world-pause; replicated, clients show paused
 	if (!bAutoPaused)
 	{
 		bAutoPaused = true;

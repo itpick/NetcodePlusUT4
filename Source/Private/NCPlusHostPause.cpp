@@ -153,8 +153,8 @@ namespace NCPlusHostPause
 			return true;
 		}
 		const FString HostId = GM->GetHostId();
-		return !HostId.IsEmpty() && PS->UniqueId.IsValid()
-			&& HostId.Equals(PS->UniqueId.ToString(), ESearchCase::IgnoreCase);
+		return !HostId.IsEmpty() && PS->GetUniqueId().IsValid()
+			&& HostId.Equals(PS->GetUniqueId().ToString(), ESearchCase::IgnoreCase);
 	}
 
 	bool CaptainMayPause(APlayerController* PC, AUTBaseGameMode* GM)
@@ -165,7 +165,7 @@ namespace NCPlusHostPause
 			return false;
 		}
 		AUTPlayerState* PS = Cast<AUTPlayerState>(PC->PlayerState);
-		if (PS == nullptr || !PS->UniqueId.IsValid())
+		if (PS == nullptr || !PS->GetUniqueId().IsValid())
 		{
 			return false;
 		}
@@ -184,7 +184,7 @@ namespace NCPlusHostPause
 			return false;
 		}
 
-		const FString MyId = PS->UniqueId.ToString();
+		const FString MyId = PS->GetUniqueId().ToString();
 		TArray<FString> Ids;
 		CaptainsOpt.ParseIntoArray(Ids, TEXT(","), /*CullEmpty=*/true);
 		bool bIsCaptain = false;
@@ -192,8 +192,8 @@ namespace NCPlusHostPause
 		{
 			// UE 4.15 has no FString::TrimStartAndEnd; .Trim()/.TrimTrailing() mutate in place.
 			FString Trimmed = Id;
-			Trimmed.Trim();
-			Trimmed.TrimTrailing();
+			Trimmed.TrimStartAndEnd();
+			Trimmed.TrimEnd();
 			if (Trimmed.Equals(MyId, ESearchCase::IgnoreCase))
 			{
 				bIsCaptain = true;
@@ -211,7 +211,7 @@ namespace NCPlusHostPause
 		// would be wrongly blocked). The cooldown is measured in UNPAUSED seconds, which is
 		// exactly "don't re-pause too soon after resuming". Unpause is never throttled.
 		AWorldSettings* WS = GM->GetWorldSettings();
-		const bool bWouldBeNewPause = (WS != nullptr && WS->Pauser == nullptr);
+		const bool bWouldBeNewPause = (WS != nullptr && WS->GetPauserPlayerState() == nullptr);
 		if (bWouldBeNewPause)
 		{
 			const float Now = World->GetTimeSeconds();
@@ -270,7 +270,7 @@ namespace NCPlusHostPause
 		// of the many other ClearPause callers (match transitions, logout cleanup with
 		// an empty list, teardown) -> pass straight through.
 		AWorldSettings* WS = GM->GetWorldSettings();
-		if (WS == nullptr || WS->Pauser == nullptr)
+		if (WS == nullptr || WS->GetPauserPlayerState() == nullptr)
 		{
 			return false;
 		}

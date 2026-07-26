@@ -132,12 +132,12 @@ EHitscanChoice ANCUTPlus::GetHitscanChoice(AController* C) const
 	}
 
 	AUTPlayerState* PS = Cast<AUTPlayerState>(PC->PlayerState);
-	if (!PS || !PS->UniqueId.IsValid())
+	if (!PS || !PS->GetUniqueId().IsValid())
 	{
 		return EHitscanChoice::Sniper;
 	}
 
-	const FString UniqueIdStr = PS->UniqueId.ToString();
+	const FString UniqueIdStr = PS->GetUniqueId().ToString();
 	const EHitscanChoice* Found = PlayerHitscanChoices.Find(UniqueIdStr);
 	return Found ? *Found : EHitscanChoice::Sniper;
 }
@@ -335,12 +335,12 @@ void ANCUTPlus::Mutate_Implementation(const FString& MutateString, APlayerContro
 		MutateString.Equals(TEXT("hsc_LG"), ESearchCase::IgnoreCase))
 	{
 		AUTPlayerState* PS = Cast<AUTPlayerState>(Sender->PlayerState);
-		if (!PS || !PS->UniqueId.IsValid())
+		if (!PS || !PS->GetUniqueId().IsValid())
 		{
 			return;
 		}
 
-		FString UniqueIdStr = PS->UniqueId.ToString();
+		FString UniqueIdStr = PS->GetUniqueId().ToString();
 		EHitscanChoice NewChoice = MutateString.Equals(TEXT("hsc_LG"), ESearchCase::IgnoreCase)
 			? EHitscanChoice::LG
 			: EHitscanChoice::Sniper;

@@ -28,7 +28,7 @@ void UNCPlusSpectatorSlideOut::Draw_Implementation(float DeltaTime)
 	bool bTrueSpectator = false;
 	if (UTHUDOwner && UTHUDOwner->UTPlayerOwner && UTHUDOwner->UTPlayerOwner->PlayerState)
 	{
-		bTrueSpectator = UTHUDOwner->UTPlayerOwner->PlayerState->bOnlySpectator;
+		bTrueSpectator = UTHUDOwner->UTPlayerOwner->PlayerState->IsOnlyASpectator();
 	}
 
 	// Suppress only the roster VISUAL (and only for a non-true-spectator). ShouldDraw
@@ -104,8 +104,8 @@ void UNCPlusSpectatorSlideOut::BuildLoadoutRows(AUTPlayerState* PS, TArray<FNCSl
 		return;
 	}
 
-	const FString PlayerId = PS->UniqueId.IsValid()
-		? PS->UniqueId.ToString()
+	const FString PlayerId = PS->GetUniqueId().IsValid()
+		? PS->GetUniqueId().ToString()
 		: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 
 	static const FName NAME_LinkBeamShots(TEXT("LinkBeamShots"));
@@ -179,8 +179,8 @@ void UNCPlusSpectatorSlideOut::ResolveAccuracy(AUTPlayerState* PS, FName HitsSta
 	{
 		if (ANCAccuracyStatsReplicator* Rep = GetAccuracyReplicator())
 		{
-			const FString PlayerId = PS->UniqueId.IsValid()
-				? PS->UniqueId.ToString()
+			const FString PlayerId = PS->GetUniqueId().IsValid()
+				? PS->GetUniqueId().ToString()
 				: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 			OutHits  = Rep->GetHitsForPlayer(PlayerId, HitsStat);
 			OutShots = Rep->GetShotsForPlayer(PlayerId, ShotsStat);

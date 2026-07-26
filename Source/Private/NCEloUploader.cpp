@@ -52,7 +52,7 @@ namespace
 		Config.bLoaded = true;
 
 		// --- Mod.ini ---
-		const FString ModIniPath = FPaths::GameSavedDir() / TEXT("Config") / TEXT("Mod.ini");
+		const FString ModIniPath = FPaths::ProjectSavedDir() / TEXT("Config") / TEXT("Mod.ini");
 		if (FPaths::FileExists(ModIniPath))
 		{
 			FConfigFile ModIni;

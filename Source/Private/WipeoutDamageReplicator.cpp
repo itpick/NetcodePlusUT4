@@ -33,7 +33,7 @@ void AWipeoutDamageReplicator::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Server only: periodically snapshot damage from PlayerStates
-	if (Role != ROLE_Authority)
+	if (GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -59,13 +59,13 @@ void AWipeoutDamageReplicator::UpdateFromPlayerStates()
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || !UTPS->UniqueId.IsValid())
+		if (!UTPS || !UTPS->GetUniqueId().IsValid())
 		{
 			continue;
 		}
 
 		FReplicatedDamageEntry Entry;
-		Entry.PlayerId = UTPS->UniqueId.ToString();
+		Entry.PlayerId = UTPS->GetUniqueId().ToString();
 
 		// DamageDone is tracked server-side on AUTPlayerState but not replicated
 		FIntProperty* DmgProp = FindFProperty<FIntProperty>(UTPS->GetClass(), TEXT("DamageDone"));

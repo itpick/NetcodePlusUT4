@@ -92,9 +92,9 @@ void AShockDomReplicator::UpdateFromPlayerStates()
 	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 	{
 		AUTPlayerState* PS = Cast<AUTPlayerState>((*It)->PlayerState);
-		if (!PS || !PS->UniqueId.IsValid()) continue;
+		if (!PS || !PS->GetUniqueId().IsValid()) continue;
 
-		FString PId = PS->UniqueId.ToString();
+		FString PId = PS->GetUniqueId().ToString();
 		int32 Damage = int32(PS->DamageDone);
 
 		// Find or create entry

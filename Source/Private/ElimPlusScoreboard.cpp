@@ -407,7 +407,7 @@ void UElimPlusScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState, f
 		if (UTHUDOwner && UTHUDOwner->UTPlayerOwner && UTHUDOwner->UTPlayerOwner->UTPlayerState)
 		{
 			AUTPlayerState* LocalPS = UTHUDOwner->UTPlayerOwner->UTPlayerState;
-			bShowBars = UTGameState->OnSameTeam(PlayerState, LocalPS) || LocalPS->bOnlySpectator;
+			bShowBars = UTGameState->OnSameTeam(PlayerState, LocalPS) || LocalPS->IsOnlyASpectator();
 		}
 
 		if (bShowBars)
@@ -453,7 +453,7 @@ void UElimPlusScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState, f
 	}
 	else if (GetWorld()->GetNetMode() != NM_Standalone)
 	{
-		const int32 Ping = bIsOwner ? PlayerState->ExactPing : (PlayerState->Ping * 4);
+		const int32 Ping = bIsOwner ? PlayerState->ExactPing : (PlayerState->GetCompressedPing() * 4);
 		const FLinearColor PingColor = (Ping < 60) ? FLinearColor(0.25f, 1.f, 0.25f, 1.f)
 			: (Ping < 120) ? FLinearColor(1.f, 1.f, 0.25f, 1.f)
 			: FLinearColor(1.f, 0.25f, 0.25f, 1.f);
@@ -473,8 +473,8 @@ void UElimPlusScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XOf
 	FString PId;
 	if (PlayerState)
 	{
-		PId = PlayerState->UniqueId.IsValid()
-			? PlayerState->UniqueId.ToString()
+		PId = PlayerState->GetUniqueId().IsValid()
+			? PlayerState->GetUniqueId().ToString()
 			: FString::Printf(TEXT("BOT:%s"), *PlayerState->GetPlayerName());
 	}
 	const FElimPlusStatsEntry* Entry = (Stats && !PId.IsEmpty()) ? Stats->FindEntry(PId) : nullptr;
@@ -575,8 +575,8 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 	auto GetPPR = [Stats](AUTPlayerState* PS) -> float
 	{
 		if (!Stats || !PS) return 0.f;
-		const FString PId = PS->UniqueId.IsValid()
-			? PS->UniqueId.ToString()
+		const FString PId = PS->GetUniqueId().IsValid()
+			? PS->GetUniqueId().ToString()
 			: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 		const FElimPlusStatsEntry* E = PId.IsEmpty() ? nullptr : Stats->FindEntry(PId);
 		return E ? E->PPRCurrent : 0.f;
@@ -598,7 +598,7 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 		{
 			AUTPlayerState* PlayerState = Cast<AUTPlayerState>(UTGameState->PlayerArray[i]);
 			if (!PlayerState) continue;
-			if (PlayerState->bOnlySpectator)
+			if (PlayerState->IsOnlyASpectator())
 			{
 				if (Team == 0 && !PlayerState->bIsDemoRecording)
 				{
@@ -620,7 +620,7 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 			const int32 KA = A.Kills + A.KillAssists;
 			const int32 KB = B.Kills + B.KillAssists;
 			if (KA != KB) return KA > KB;
-			return A.Score > B.Score;
+			return A.GetScore() > B.GetScore();
 		});
 
 		// Concept-D dark panel backdrop behind this team's rows + a thin team-color
@@ -664,7 +664,7 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 				SumK += TP->Kills;
 				SumD += TP->Deaths;
 				SumPPR += PPRByPlayer.FindRef(TP);
-				const FString PId = TP->UniqueId.IsValid() ? TP->UniqueId.ToString() : FString::Printf(TEXT("BOT:%s"), *TP->GetPlayerName());
+				const FString PId = TP->GetUniqueId().IsValid() ? TP->GetUniqueId().ToString() : FString::Printf(TEXT("BOT:%s"), *TP->GetPlayerName());
 				const FElimPlusStatsEntry* E = (Stats && !PId.IsEmpty()) ? Stats->FindEntry(PId) : nullptr;
 				SumDMG += E ? E->DamageDone : int32(TP->DamageDone);
 				SumElo += E ? E->Elo : 1400; ++CountElo;
@@ -672,7 +672,7 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 				if (bNetworked && !Cast<AUTBot>(TP->GetOwner()))
 				{
 					const bool bTPOwner = (UTHUDOwner && UTHUDOwner->UTPlayerOwner && UTHUDOwner->UTPlayerOwner->UTPlayerState == TP);
-					SumPing += bTPOwner ? TP->ExactPing : (TP->Ping * 4);
+					SumPing += bTPOwner ? TP->ExactPing : (TP->GetCompressedPing() * 4);
 					++CountPing;
 				}
 			}

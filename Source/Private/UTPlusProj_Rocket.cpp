@@ -21,7 +21,7 @@ void AUTPlusProj_Rocket::BeginPlay()
 	// DIAGNOSTIC: one line per SERVER-spawned rocket. Count these against your primary taps:
 	// 0 lines = the server never fired (client-only "blanks"); N lines = the server IS firing,
 	// so a no-reg is a whiff / rescue failure, not a blank.
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		AUTCharacter* OwnerChar = Cast<AUTCharacter>(GetInstigator());
 		UE_LOG(LogRocketDbg, Warning, TEXT("[RocketDbg] server rocket SPAWNED by %s at %s"),
@@ -38,7 +38,7 @@ void AUTPlusProj_Rocket::ProcessHit_Implementation(AActor* OtherActor, UPrimitiv
 	// on the client's local pawn positions. The server may disagree because its
 	// capsule positions are different — the RPC gives it a second chance with rewind.
 	// Role != ROLE_Authority means we're on the client viewing the replicated rocket.
-	if (Role != ROLE_Authority && OtherActor && !bFakeClientProjectile)
+	if (GetLocalRole() != ROLE_Authority && OtherActor && !bFakeClientProjectile)
 	{
 		AUTCharacter* HitChar = Cast<AUTCharacter>(OtherActor);
 		if (HitChar)
@@ -64,7 +64,7 @@ void AUTPlusProj_Rocket::ProcessHit_Implementation(AActor* OtherActor, UPrimitiv
 	// destroys this projectile, so a claim arriving after the rocket is gone (close-range timing
 	// race) can still rewind-rescue. The pawn we directly hit (or null = geometry/whiff) is passed
 	// so the grace path won't double-damage a target that already took the present-time hit.
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		// DIAGNOSTIC: what the SERVER rocket actually hit present-time — a pawn (the target),
 		// world geometry, or nothing. Pairs with the SPAWNED line in BeginPlay to separate
@@ -88,7 +88,7 @@ void AUTPlusProj_Rocket::ProcessHit_Implementation(AActor* OtherActor, UPrimitiv
 	// rocket detonating against a wall inflates RocketHits. Zero the credit for non-pawn impacts so
 	// only player hits count. Pawn hits keep the default credit; the radial/splash path in Explode
 	// resets StatsHitCredit itself, so this affects only the buggy direct-impact line.
-	if (Role == ROLE_Authority && Cast<APawn>(OtherActor) == nullptr)
+	if (GetLocalRole() == ROLE_Authority && Cast<APawn>(OtherActor) == nullptr)
 	{
 		StatsHitCredit = 0.f;
 	}

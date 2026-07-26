@@ -111,7 +111,7 @@ void UUTWeaponStateFiringChargedRocket_Transactional::EndState()
         RocketLauncher->CurrentRocketFireMode = 0;
         RocketLauncher->bDrawRocketModeString = false;
         
-        if (RocketLauncher->Role == ROLE_Authority)
+        if (RocketLauncher->GetLocalRole() == ROLE_Authority)
         {
             RocketLauncher->SetRocketFlashExtra(
                 RocketLauncher->GetCurrentFireMode(), 0, 0, false);
@@ -290,7 +290,7 @@ void UUTWeaponStateFiringChargedRocket_Transactional::EndFiringSequence(uint8 Fi
     if (RocketLauncher && RocketLauncher->NumLoadedRockets <= 0 && GetOuterAUTWeapon()->GetWorldTimerManager().IsTimerActive(LoadTimerHandle))
     {
         float Remaining = GetOuterAUTWeapon()->GetWorldTimerManager().GetTimerRemaining(LoadTimerHandle);
-        float RTT_ms = (GetUTOwner() && GetUTOwner()->PlayerState) ? GetUTOwner()->PlayerState->ExactPing : 0.0f;
+        float RTT_ms = (GetUTOwner() && GetUTOwner()->GetPlayerState()) ? GetUTOwner()->GetPlayerState()->ExactPing : 0.0f;
 
         // Convert RTT to One-Way Seconds + Jitter Buffer
         float Tolerance = FMath::Clamp((RTT_ms * 0.0005f) + 0.02f, 0.0f, 0.20f);

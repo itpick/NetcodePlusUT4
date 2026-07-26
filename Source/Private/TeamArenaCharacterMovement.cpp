@@ -173,7 +173,7 @@ void UTeamArenaCharacterMovement::UTCallServerMove()
                            || Velocity.SizeSquared() > 1500.f * 1500.f;
         float NetMoveDelta = bNeedsHighRate ? 0.011f : 0.025f;
 
-        if (((NewMove->TimeStamp - ClientData->ClientUpdateTime) * CharacterOwner->GetWorldSettings()->GetEffectiveTimeDilation() < NetMoveDelta))
+        if (((NewMove->TimeStamp - ClientData->ClientUpdateRealTime) * CharacterOwner->GetWorldSettings()->GetEffectiveTimeDilation() < NetMoveDelta))
         {
             return;
         }
@@ -188,7 +188,7 @@ void UTeamArenaCharacterMovement::UTCallServerMove()
         for (int32 i = 0; i < ClientData->SavedMoves.Num() - 1; i++)
         {
             const FSavedMovePtr& CurrentMove = ClientData->SavedMoves[i];
-            if (CurrentMove->TimeStamp > ClientData->ClientUpdateTime)
+            if (CurrentMove->TimeStamp > ClientData->ClientUpdateRealTime)
             {
                 break;
             }
@@ -214,9 +214,9 @@ void UTeamArenaCharacterMovement::UTCallServerMove()
     for (int32 i = 0; i < ClientData->SavedMoves.Num() - 1; i++)
     {
         const FSavedMovePtr& MoveToSend = ClientData->SavedMoves[i];
-        if (MoveToSend.IsValid() && (MoveToSend->TimeStamp > ClientData->ClientUpdateTime))
+        if (MoveToSend.IsValid() && (MoveToSend->TimeStamp > ClientData->ClientUpdateRealTime))
         {
-            ClientData->ClientUpdateTime = MoveToSend->TimeStamp;
+            ClientData->ClientUpdateRealTime = MoveToSend->TimeStamp;
             if (((FSavedMove_UTCharacter*)(MoveToSend.Get()))->NeedsRotationSent())
             {
                 UTCharacterOwner->UTServerMoveSaved(MoveToSend->TimeStamp, MoveToSend->Acceleration, MoveToSend->GetCompressedFlags(), MoveToSend->SavedControlRotation.Yaw, MoveToSend->SavedControlRotation.Pitch);
@@ -228,7 +228,7 @@ void UTeamArenaCharacterMovement::UTCallServerMove()
         }
     }
 
-    if (NewMove.IsValid() && (NewMove->TimeStamp > ClientData->ClientUpdateTime))
+    if (NewMove.IsValid() && (NewMove->TimeStamp > ClientData->ClientUpdateRealTime))
     {
         UPrimitiveComponent* ClientMovementBase = NewMove->EndBase.Get();
         bool bUseRelativeLocation = MovementBaseUtility::UseRelativeLocation(ClientMovementBase);
@@ -238,7 +238,7 @@ void UTeamArenaCharacterMovement::UTCallServerMove()
             ClientMovementBase = NULL;
             NewMove->EndBoneName = NAME_None;
         }
-        ClientData->ClientUpdateTime = NewMove->TimeStamp;
+        ClientData->ClientUpdateRealTime = NewMove->TimeStamp;
         UTCharacterOwner->UTServerMove
             (
             NewMove->TimeStamp,

@@ -17,7 +17,7 @@ void AUTPlusProj_FlakShell::ProcessHit_Implementation(AActor* OtherActor, UPrimi
 	// This fires on the CLIENT when the replicated (real) flak shell overlaps an enemy
 	// on the client's local pawn positions. The server may disagree because its
 	// capsule positions are different — the RPC gives it a second chance with rewind.
-	if (Role != ROLE_Authority && OtherActor && !bFakeClientProjectile)
+	if (GetLocalRole() != ROLE_Authority && OtherActor && !bFakeClientProjectile)
 	{
 		AUTCharacter* HitChar = Cast<AUTCharacter>(OtherActor);
 		if (HitChar)
@@ -41,7 +41,7 @@ void AUTPlusProj_FlakShell::ProcessHit_Implementation(AActor* OtherActor, UPrimi
 	// destroys this shell, so a claim arriving after the shell is gone (close-range timing race)
 	// can still rewind-rescue. The pawn we directly hit (or null = geometry/whiff) is passed so
 	// the grace path won't double-damage a target that already took the present-time hit.
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		AUTCharacter* OwnerChar = Cast<AUTCharacter>(GetInstigator());
 		AUTWeaponFix* Weapon = OwnerChar ? Cast<AUTWeaponFix>(OwnerChar->GetWeapon()) : nullptr;
@@ -59,7 +59,7 @@ void AUTPlusProj_FlakShell::ProcessHit_Implementation(AActor* OtherActor, UPrimi
 	// resets StatsHitCredit itself, so this affects only the buggy direct-impact line. NOTE: the
 	// flak-PRIMARY shards (stock AUTProj_FlakShard) are a separate, unsubclassed projectile and are
 	// not covered by this fix.
-	if (Role == ROLE_Authority && Cast<APawn>(OtherActor) == nullptr)
+	if (GetLocalRole() == ROLE_Authority && Cast<APawn>(OtherActor) == nullptr)
 	{
 		StatsHitCredit = 0.f;
 	}

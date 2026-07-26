@@ -158,7 +158,7 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 		}
 	}
 	*/
-	if (UTOwner && Cast<AUTCharacter>(Hit.Actor.Get()) == NULL)
+	if (UTOwner && Cast<AUTCharacter>(Hit.GetActor()) == NULL)
 	{
 		// Find potential head targets using Epic's ChooseBestAimTarget
 		AUTCharacter* AltTarget = Cast<AUTCharacter>(UUTGameplayStatics::ChooseBestAimTarget(
@@ -205,7 +205,7 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 					SpawnLocation + FireDir * FMath::Max(0.f, HitDist), -FireDir);
 
 #if !UE_BUILD_SHIPPING
-				if (Role == ROLE_Authority)
+				if (GetLocalRole() == ROLE_Authority)
 				{
 					UE_LOG(LogTemp, Verbose, TEXT("[Sniper] Secondary head hit on %s, Scale=%.2f (base %.2f + padding)"),
 						*AltTarget->GetName(), EffectiveHeadScale, GetHeadshotScale(AltTarget));
@@ -218,14 +218,14 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 	// ----------------------------------------------------------------------
 	// PART 4: SERVER SIDE VISUALS & WARNINGS
 	// ----------------------------------------------------------------------
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		if (PS && (ShotsStatsName != NAME_None))
 		{
 			PS->ModifyStatsValue(ShotsStatsName, 1);
 		}
 		uint8 FlashExtra = 0;
-		if (Hit.Actor.Get() != nullptr && Cast<APawn>(Hit.Actor.Get()) != nullptr)
+		if (Hit.GetActor() != nullptr && Cast<APawn>(Hit.GetActor()) != nullptr)
 		{
 			FlashExtra = 1;
 		}
@@ -237,7 +237,7 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 		// Warn Bots
 		if (UTPC != NULL)
 		{
-			APawn* PawnTarget = Cast<APawn>(Hit.Actor.Get());
+			APawn* PawnTarget = Cast<APawn>(Hit.GetActor());
 			if (bDealDamage && PawnTarget != NULL)
 			{
 				AUTBot* EnemyBot = Cast<AUTBot>(PawnTarget->Controller);
@@ -249,7 +249,7 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 			AUTBot* B = UTOwner ? Cast<AUTBot>(UTOwner->Controller) : nullptr;
 			if (B != NULL)
 			{
-				APawn* PawnTarget = Cast<APawn>(Hit.Actor.Get());
+				APawn* PawnTarget = Cast<APawn>(Hit.GetActor());
 				if (PawnTarget == NULL) PawnTarget = Cast<APawn>(B->GetTarget());
 				if (PawnTarget != NULL)
 				{
@@ -277,13 +277,13 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 	// ----------------------------------------------------------------------
 	// PART 5: DAMAGE CALCULATION (Sniper Specific Logic)
 	// ----------------------------------------------------------------------
-	if (Hit.Actor != NULL && Hit.Actor->bCanBeDamaged && bDealDamage)
+	if (Hit.GetActor() != NULL && Hit.GetActor()->bCanBeDamaged && bDealDamage)
 	{
 		int32 Damage = GetHitScanDamage();
 		TSubclassOf<UDamageType> DamageType = InstantHitInfo[CurrentFireMode].DamageType;
 		bool bIsHeadShot = false;
 		bool bBlockedHeadshot = false;
-		AUTCharacter* C = Cast<AUTCharacter>(Hit.Actor.Get());
+		AUTCharacter* C = Cast<AUTCharacter>(Hit.GetActor());
 
 		if (C != NULL && CanHeadShot())
 		{
@@ -369,17 +369,17 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 		}
 
 		OnHitScanDamage(Hit, FireDir);
-		Hit.Actor->TakeDamage(Damage, FUTPointDamageEvent(Damage, Hit, FireDir, DamageType, FireDir * InstantHitInfo[CurrentFireMode].Momentum), (UTOwner ? UTOwner->Controller : nullptr), this);
+		Hit.GetActor()->TakeDamage(Damage, FUTPointDamageEvent(Damage, Hit, FireDir, DamageType, FireDir * InstantHitInfo[CurrentFireMode].Momentum), (UTOwner ? UTOwner->Controller : nullptr), this);
 
-		if ((Role == ROLE_Authority) && bIsHeadShot && C && (C->Health > 0) && (bBlockedHeadshot || (Damage >= 100)))
+		if ((GetLocalRole() == ROLE_Authority) && bIsHeadShot && C && (C->Health > 0) && (bBlockedHeadshot || (Damage >= 100)))
 		{
 			C->NotifyBlockedHeadShot(UTOwner);
 		}
-		if ((Role == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
+		if ((GetLocalRole() == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
 		{
 			PS->ModifyStatsValue(HitsStatsName, 1);
 		}
-		if (Role == ROLE_Authority && C && C != UTOwner)
+		if (GetLocalRole() == ROLE_Authority && C && C != UTOwner)
 		{
 			bHitEnemyPawn = true;
 		}
@@ -390,7 +390,7 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 		*OutHit = Hit;
 	}
 
-	if (Role == ROLE_Authority && bTrackImpressive)
+	if (GetLocalRole() == ROLE_Authority && bTrackImpressive)
 	{
 		if (bHitEnemyPawn)
 		{
@@ -418,7 +418,7 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 
 void AUTPlusSniper::OnServerHitScanResult(const FHitResult& Hit, float PredictionTime)
 {
-	if (!bTrackImpressive || Role != ROLE_Authority)
+	if (!bTrackImpressive || GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}

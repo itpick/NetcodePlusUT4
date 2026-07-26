@@ -191,7 +191,7 @@ EInputMode::Type ANCPlusCTFHUD::GetInputMode_Implementation() const
 	{
 		AUTPlayerState* PS = UTPlayerOwner->UTPlayerState;
 		AUTGameState* GS = GetWorld()->GetGameState<AUTGameState>();
-		if (PS && !PS->bOnlySpectator && GS && GS->GetMatchState() == MatchState::InProgress)
+		if (PS && !PS->IsOnlyASpectator() && GS && GS->GetMatchState() == MatchState::InProgress)
 		{
 			return EInputMode::EIM_GameOnly;
 		}
@@ -270,7 +270,7 @@ void ANCPlusCTFHUD::DrawSpectatorTarget()
 	// Viewing our own pawn = playing, not spectating.
 	if (ViewPawn == UTPlayerOwner->GetPawn()) return;
 
-	AUTPlayerState* PS = Cast<AUTPlayerState>(ViewPawn->PlayerState);
+	AUTPlayerState* PS = Cast<AUTPlayerState>(ViewPawn->GetPlayerState());
 	if (!PS || PS->GetPlayerName().IsEmpty()) return;
 
 	const float RenderScale = float(Canvas->SizeX) / 1920.0f;

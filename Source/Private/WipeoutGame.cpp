@@ -259,11 +259,11 @@ bool AUWipeoutGame::ChangeTeam(AController* Player, uint8 NewTeam, bool bBroadca
 	if (bIsPugMatch && PugRosterTeam.Num() > 0 && Player && HasAuthority())
 	{
 		AUTPlayerState* PS = Cast<AUTPlayerState>(Player->PlayerState);
-		if (PS && !PS->bOnlySpectator && PS->UniqueId.IsValid())
+		if (PS && !PS->IsOnlyASpectator() && PS->GetUniqueId().IsValid())
 		{
 			// Match on UniqueId.ToString() — the same id MutBotEvents posts as Ut4Id
 			// and the bot stores in players.ut4_id.
-			if (const uint8* Assigned = PugRosterTeam.Find(PS->UniqueId.ToString().ToLower()))
+			if (const uint8* Assigned = PugRosterTeam.Find(PS->GetUniqueId().ToString().ToLower()))
 			{
 				const uint8 Want = *Assigned;
 				// Already on the right side — accept without re-suiciding them
@@ -405,9 +405,9 @@ void AUWipeoutGame::PostLogin(APlayerController* NewPlayer)
 	if (!NewPlayer) return;
 
 	AUTPlayerState* UTPS = Cast<AUTPlayerState>(NewPlayer->PlayerState);
-	if (UTPS && UTPS->UniqueId.IsValid())
+	if (UTPS && UTPS->GetUniqueId().IsValid())
 	{
-		RatingSystem->LoadPlayerFromDB(GetWorld(), UTPS->UniqueId.ToString());
+		RatingSystem->LoadPlayerFromDB(GetWorld(), UTPS->GetUniqueId().ToString());
 	}
 }
 
@@ -449,11 +449,11 @@ void AUWipeoutGame::HandleMatchHasEnded()
 	for (APlayerState* APS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
-		if (!UTPS->UniqueId.IsValid()) continue;  // bot
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
+		if (!UTPS->GetUniqueId().IsValid()) continue;  // bot
 
 		FNCWipeoutPlayerInput P;
-		P.UniqueId   = UTPS->UniqueId.ToString();
+		P.UniqueId   = UTPS->GetUniqueId().ToString();
 		P.PlayerName = UTPS->GetPlayerName();
 		P.TeamIndex  = UTPS->GetTeamNum();
 		P.Kills      = UTPS->Kills;
@@ -618,7 +618,7 @@ void AUWipeoutGame::DefaultTimer()
 					for (FConstControllerIterator It = GetWorld()->GetControllerIterator(); It; ++It)
 					{
 						AUTPlayerState* DeadPS = It->Get() ? Cast<AUTPlayerState>(It->Get()->PlayerState) : nullptr;
-						if (DeadPS && DeadPS->bOutOfLives && !DeadPS->bOnlySpectator)
+						if (DeadPS && DeadPS->bOutOfLives && !DeadPS->IsOnlyASpectator())
 						{
 							DeadPS->RespawnTime = 0.f;
 							DeadPS->ForceNetUpdate();
@@ -1242,7 +1242,7 @@ void AUWipeoutGame::StartNextRound()
 			if (!C) continue;
 
 			AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-			if (!PS || PS->bOnlySpectator || !PS->Team) continue;
+			if (!PS || PS->IsOnlyASpectator() || !PS->Team) continue;
 			if (PS->Team->TeamIndex != TargetTeam) continue;
 
 			PS->bOutOfLives = false;
@@ -1346,14 +1346,14 @@ void AUWipeoutGame::EndRoundForTeam(int32 WinnerTeamIndex, FName Reason)
 				for (APlayerState* PS : RGS->PlayerArray)
 				{
 					AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-					if (!UTPS || UTPS->bOnlySpectator) continue;
+					if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 					if (UTPS->GetTeamNum() != TeamIdx) continue;
 
 					FWipeoutPlayerRoundPerf P;
 					// Bots get synthetic key; filtered at write-back time so their
 					// transient PlayerRating placeholders never persist.
-					P.UniqueId = UTPS->UniqueId.IsValid()
-						? UTPS->UniqueId.ToString()
+					P.UniqueId = UTPS->GetUniqueId().IsValid()
+						? UTPS->GetUniqueId().ToString()
 						: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 					P.Kills    = UTPS->RoundKills;
 					// Wipeout has mid-round respawns, so a single bOutOfLives flag
@@ -1461,7 +1461,7 @@ void AUWipeoutGame::EndGame(AUTPlayerState* Winner, FName Reason)
 	// Safety: only access replay data if demo recording is actually running.
 	// Standalone PIE and servers without demo recording will crash in
 	// PickMostCoolMoments if DemoNetDriver is null.
-	if (GetWorld()->DemoNetDriver != nullptr)
+	if (GetWorld()->GetDemoNetDriver() != nullptr)
 	{
 		PickMostCoolMoments();
 	}
@@ -1670,7 +1670,7 @@ void AUWipeoutGame::ArmSpawnRemediation(APawn* Pawn, const FVector& IntendedLoc)
 
 	const float Now = GetWorld()->GetTimeSeconds();
 
-	if (AUTPlayerState* PS = Cast<AUTPlayerState>(Pawn->PlayerState))
+	if (AUTPlayerState* PS = Cast<AUTPlayerState>(Pawn->GetPlayerState()))
 	{
 		LastSpawnWorldTime.Add(PS, Now);   // for the death-refund window
 	}
@@ -1716,7 +1716,7 @@ void AUWipeoutGame::CheckSpawnRemediation(TWeakObjectPtr<APawn> WeakPawn)
 			Char->GetCharacterMovement()->Velocity = FVector::ZeroVector;
 		}
 		UE_LOG(LogGameMode, Warning, TEXT("Wipeout: bad spawn remediated — snapped %s back to %s"),
-			Pawn->PlayerState ? *Pawn->PlayerState->GetPlayerName() : TEXT("?"), *R->Anchor.ToString());
+			Pawn->GetPlayerState() ? *Pawn->GetPlayerState()->GetPlayerName() : TEXT("?"), *R->Anchor.ToString());
 		bStop = true;   // one snap-back is enough
 	}
 

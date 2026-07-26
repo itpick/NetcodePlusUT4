@@ -123,7 +123,7 @@ bool UNCPlusHUDWidget_HealAbility::ShouldDraw_Implementation(bool bShowScores)
 	if (bShowScores) return false;
 	if (!IsValid(UTHUDOwner) || !IsValid(UTHUDOwner->UTPlayerOwner)) return false;
 	AUTPlayerState* PS = UTHUDOwner->UTPlayerOwner->UTPlayerState;
-	if (!IsValid(PS) || PS->bOnlySpectator) return false;
+	if (!IsValid(PS) || PS->IsOnlyASpectator()) return false;
 
 	// Strict Wipeout-only gate. BoostClass is set in WipeoutGame::RestartPlayer
 	// (WipeoutGame.cpp:1306) and replicates to clients. In any other mode

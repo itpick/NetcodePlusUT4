@@ -31,9 +31,9 @@ namespace NCPlusScoreboardHost
 		// Fallback: the replicated HostIdString covers the warmup window before
 		// ReadyToStartMatch assigns bIsMatchHost, and any mode that doesn't run
 		// that path. Bots have no UniqueId so they never match.
-		if (!GS->HostIdString.IsEmpty() && PS->UniqueId.IsValid())
+		if (!GS->HostIdString.IsEmpty() && PS->GetUniqueId().IsValid())
 		{
-			return GS->HostIdString.Equals(PS->UniqueId.ToString(), ESearchCase::IgnoreCase);
+			return GS->HostIdString.Equals(PS->GetUniqueId().ToString(), ESearchCase::IgnoreCase);
 		}
 		return false;
 	}

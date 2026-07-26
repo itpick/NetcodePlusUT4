@@ -128,7 +128,7 @@ void AUTPlusShockRifle::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Throttle screen texture updates to 30Hz — ammo counter doesn't need 480fps updates
-	if (ScreenTexture != NULL && Mesh->IsRegistered() && GetWorld()->TimeSeconds - Mesh->LastRenderTime < 0.1f)
+	if (ScreenTexture != NULL && Mesh->IsRegistered() && GetWorld()->TimeSeconds - Mesh->GetLastRenderTime() < 0.1f)
 	{
 		const float ScreenUpdateInterval = 1.0f / 30.0f;
 		if (GetWorld()->TimeSeconds - LastScreenUpdateTime >= ScreenUpdateInterval)
@@ -523,9 +523,9 @@ void AUTPlusShockRifle::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 	Super::FireInstantHit(bDealDamage, OutHit);
 
 	// --- SERVER ONLY LOGIC (Stats & Impressive) ---
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		AUTPlayerState* PS = UTOwner ? Cast<AUTPlayerState>(UTOwner->PlayerState) : nullptr;
+		AUTPlayerState* PS = UTOwner ? Cast<AUTPlayerState>(UTOwner->GetPlayerState()) : nullptr;
 
 		// 1. Record Primary SHOT Attempt
 		// We do this before checking hits. If we fired mode 0, count it.
@@ -537,7 +537,7 @@ void AUTPlusShockRifle::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 		// 2. Process Hit Results (for both Impressive Streak AND Accuracy)
 		if (OutHit && OutHit->bBlockingHit)
 		{
-			AUTCharacter* HitChar = Cast<AUTCharacter>(OutHit->Actor.Get());
+			AUTCharacter* HitChar = Cast<AUTCharacter>(OutHit->GetActor());
 			// Define a valid hit: Must be a character, not us, and not dead
 			bool bHitEnemyPawn = (HitChar != nullptr && HitChar != UTOwner && !HitChar->IsDead());
 
@@ -571,7 +571,7 @@ void AUTPlusShockRifle::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 
 	// --- COMBO FX REPLICATION ---
 	// FlashExtra 1 will play the ComboEffects for the other clients
-	if (Role == ROLE_Authority && UTOwner != nullptr && bIsCombo)
+	if (GetLocalRole() == ROLE_Authority && UTOwner != nullptr && bIsCombo)
 	{
 		UTOwner->SetFlashExtra(1, CurrentFireMode);
 	}

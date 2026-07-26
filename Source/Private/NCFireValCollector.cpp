@@ -18,7 +18,7 @@ bool FNCFireValCollector::IsEnabled()
 	if (Cached < 0)
 	{
 		bool b = false;
-		const FString ModIniPath = FPaths::GameSavedDir() / TEXT("Config") / TEXT("Mod.ini");
+		const FString ModIniPath = FPaths::ProjectSavedDir() / TEXT("Config") / TEXT("Mod.ini");
 		if (FPaths::FileExists(ModIniPath))
 		{
 			FConfigFile ModIni;
@@ -88,7 +88,7 @@ void FNCFireValCollector::Record(UWorld* World, AUTPlayerState* Shooter, int32 S
 	// `setname`) -> name (last resort).
 	FString Key;
 	if (!Shooter->StatsID.IsEmpty())      Key = TEXT("id:")   + Shooter->StatsID;
-	else if (Shooter->UniqueId.IsValid()) Key = TEXT("net:")  + Shooter->UniqueId.ToString();
+	else if (Shooter->GetUniqueId().IsValid()) Key = TEXT("net:")  + Shooter->GetUniqueId().ToString();
 	else                                  Key = TEXT("name:") + Shooter->GetPlayerName();
 
 	AGameStateBase* GS = World ? World->GetGameState() : nullptr;
@@ -242,7 +242,7 @@ void FNCFireValCollector::WriteCsv(UWorld* World) const
 	}
 
 	const FString MapTag = World ? FPaths::GetBaseFilename(World->URL.Map) : FString(TEXT("match"));
-	const FString Path = FPaths::GameSavedDir() / TEXT("Logs")
+	const FString Path = FPaths::ProjectSavedDir() / TEXT("Logs")
 		/ FString::Printf(TEXT("FireVal_%s_%d.csv"), *MapTag, GFireValMatchCounter);
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), /*Tree=*/true);
 	if (FFileHelper::SaveStringToFile(Csv, *Path, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))

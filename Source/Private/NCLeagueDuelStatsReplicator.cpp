@@ -32,7 +32,7 @@ void ANCLeagueDuelStatsReplicator::BeginPlay()
 void ANCLeagueDuelStatsReplicator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (Role != ROLE_Authority)
+	if (GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -54,13 +54,13 @@ void ANCLeagueDuelStatsReplicator::UpdateFromPlayerStates()
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
 		FNCLeagueDuelStatsEntry Entry;
 		// Mirror the bot ID convention used elsewhere (rating system, balancer)
 		// so future bot-accuracy displays line up.
-		Entry.PlayerId = UTPS->UniqueId.IsValid()
-			? UTPS->UniqueId.ToString()
+		Entry.PlayerId = UTPS->GetUniqueId().IsValid()
+			? UTPS->GetUniqueId().ToString()
 			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		// Hitscan accuracy = Sniper + Lightning Gun. The duel weapon set is the Pro+

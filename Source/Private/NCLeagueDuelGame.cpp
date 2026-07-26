@@ -137,7 +137,7 @@ void ANCLeagueDuelGame::InitGame(const FString& MapName, const FString& Options,
 	// to clients so the duel scoreboard's Acc column actually has data to
 	// render. Without this every remote player's accuracy reads 0 (StatsData
 	// is UPROPERTY() with no Replicated specifier in the engine).
-	if (Role == ROLE_Authority && !StatsReplicator)
+	if (GetLocalRole() == ROLE_Authority && !StatsReplicator)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
@@ -155,7 +155,7 @@ void ANCLeagueDuelGame::PostLogin(APlayerController* NewPlayer)
 	// Early plugin-version check — kicks mismatched clients within 10s of join.
 	NCPlusVersionGate::SpawnFor(NewPlayer);
 
-	if (Role != ROLE_Authority || !NewPlayer) return;
+	if (GetLocalRole() != ROLE_Authority || !NewPlayer) return;
 	AUTPlayerState* PS = Cast<AUTPlayerState>(NewPlayer->PlayerState);
 	if (!PS) return;
 
@@ -177,7 +177,7 @@ void ANCLeagueDuelGame::PostLogin(APlayerController* NewPlayer)
 void ANCLeagueDuelGame::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
-	if (Role == ROLE_Authority && RatingSystem)
+	if (GetLocalRole() == ROLE_Authority && RatingSystem)
 	{
 		RatingSystem->SnapshotMatchStart();
 	}
@@ -235,7 +235,7 @@ void ANCLeagueDuelGame::EndPlayerIntro()
 		PC->UTPlayerState->RespawnChoiceA = nullptr;
 		PC->UTPlayerState->RespawnChoiceB = nullptr;
 
-		if (PC->UTPlayerState->bIsSpectator) continue;
+		if (PC->UTPlayerState->IsSpectator()) continue;
 		if (WeaponPairs.Num() == 0 || FirstSpawnShuffleOrder.Num() < 2) continue;
 
 		const int32 TeamIdx = PC->UTPlayerState->Team ? PC->UTPlayerState->Team->TeamIndex : 0;
@@ -287,7 +287,7 @@ void ANCLeagueDuelGame::EndPlayerIntro()
 void ANCLeagueDuelGame::HandleMatchHasEnded()
 {
 	Super::HandleMatchHasEnded();
-	if (Role != ROLE_Authority || !RatingSystem || !UTGameState) return;
+	if (GetLocalRole() != ROLE_Authority || !RatingSystem || !UTGameState) return;
 
 	// Engine routes HandleMatchHasEnded twice in some paths (state machine +
 	// derived). Without a guard the rating math, DB write, AND upload would
@@ -302,14 +302,14 @@ void ANCLeagueDuelGame::HandleMatchHasEnded()
 	for (APlayerState* APS : UTGameState->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
-		if (!P1 || UTPS->Score > P1->Score)      { P2 = P1; P1 = UTPS; }
-		else if (!P2 || UTPS->Score > P2->Score) { P2 = UTPS; }
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
+		if (!P1 || UTPS->GetScore() > P1->GetScore())      { P2 = P1; P1 = UTPS; }
+		else if (!P2 || UTPS->GetScore() > P2->GetScore()) { P2 = UTPS; }
 	}
 
 	if (P1 && P2)
 	{
-		const bool bDraw = (P1->Score == P2->Score);
+		const bool bDraw = (P1->GetScore() == P2->GetScore());
 		const FString WinnerId = P1->StatsID.IsEmpty() ? P1->GetPlayerName() : P1->StatsID;
 		const FString LoserId  = P2->StatsID.IsEmpty() ? P2->GetPlayerName() : P2->StatsID;
 		RatingSystem->ProcessMatchResult(WinnerId, LoserId, bDraw);
@@ -320,10 +320,10 @@ void ANCLeagueDuelGame::HandleMatchHasEnded()
 		FNCDuelMatchInput UploadIn;
 		UploadIn.WinnerId    = WinnerId;
 		UploadIn.WinnerName  = P1->GetPlayerName();
-		UploadIn.WinnerScore = P1->Score;
+		UploadIn.WinnerScore = P1->GetScore();
 		UploadIn.LoserId     = LoserId;
 		UploadIn.LoserName   = P2->GetPlayerName();
-		UploadIn.LoserScore  = P2->Score;
+		UploadIn.LoserScore  = P2->GetScore();
 		UploadIn.bDraw       = bDraw;
 		const FString Json = RatingSystem->BuildResultPayload(GetWorld(), UploadIn);
 		if (!Json.IsEmpty())
@@ -995,15 +995,15 @@ void ANCLeagueDuelGame::BuildMatchSummary(FNCMatchSummary& Out) const
 	for (APlayerState* APS : UTGameState->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
 		FNCPlayerSummary P;
 		P.UniqueId   = UTPS->StatsID.IsEmpty() ? UTPS->GetPlayerName() : UTPS->StatsID;
 		P.PlayerName = UTPS->GetPlayerName();
-		P.Score      = UTPS->Score;
+		P.Score      = UTPS->GetScore();
 		P.Kills      = UTPS->Kills;
 		P.Deaths     = UTPS->Deaths;
-		P.Ping       = UTPS->Ping;
+		P.Ping       = UTPS->GetCompressedPing();
 		P.Team       = UTPS->Team ? UTPS->Team->TeamIndex : 0;
 
 		// Per-weapon accuracy from the engine stats system.

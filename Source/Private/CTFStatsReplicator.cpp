@@ -36,7 +36,7 @@ void ACTFStatsReplicator::BeginPlay()
 	// the entire warmup period because Tick / UpdateFromPlayerStates didn't
 	// fire on dedicated servers until the match transitioned to InProgress
 	// in the old spawn-at-HandleMatchHasStarted code path.
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		if (AUTGameMode* GM = GetWorld()->GetAuthGameMode<AUTGameMode>())
 		{
@@ -49,7 +49,7 @@ void ACTFStatsReplicator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (Role != ROLE_Authority)
+	if (GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -83,13 +83,13 @@ void ACTFStatsReplicator::UpdateFromPlayerStates()
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || !UTPS->UniqueId.IsValid())
+		if (!UTPS || !UTPS->GetUniqueId().IsValid())
 		{
 			continue;
 		}
 
 		FCTFReplicatedStatsEntry Entry;
-		Entry.PlayerId = UTPS->UniqueId.ToString();
+		Entry.PlayerId = UTPS->GetUniqueId().ToString();
 		Entry.FlagGrabs = UTPS->GetStatsValue(NAME_FlagGrabs);
 
 		// Auto-detect instagib vs normal hitscan. Instagib mode shows the instagib rifle's accuracy;

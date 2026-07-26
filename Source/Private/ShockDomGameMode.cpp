@@ -394,10 +394,10 @@ void AShockDomGameMode::OnPointCaptured(AShockDomControlPoint* Point, uint8 NewT
 	if (!Point || !Capturer) return;
 
 	// Track capture count (replicated via DOM replicator)
-	AUTPlayerState* PS = Cast<AUTPlayerState>(Capturer->PlayerState);
+	AUTPlayerState* PS = Cast<AUTPlayerState>(Capturer->GetPlayerState());
 	if (PS)
 	{
-		FString UniqueId = PS->UniqueId.ToString();
+		FString UniqueId = PS->GetUniqueId().ToString();
 		if (DomReplicator)
 		{
 			DomReplicator->IncrementCaptures(UniqueId);
@@ -726,9 +726,9 @@ AUTPlayerState* AShockDomGameMode::FindBestPlayerOnTeam(int32 TeamIndex)
 		if (!PS || !PS->Team || PS->Team->TeamIndex != TeamIndex) continue;
 
 		int32 Captures = 0;
-		if (DomReplicator && PS->UniqueId.IsValid())
+		if (DomReplicator && PS->GetUniqueId().IsValid())
 		{
-			Captures = DomReplicator->GetCapturesForPlayer(PS->UniqueId.ToString());
+			Captures = DomReplicator->GetCapturesForPlayer(PS->GetUniqueId().ToString());
 		}
 
 		if (Captures > BestCaptures || (Captures == BestCaptures && PS->Kills > BestKills))

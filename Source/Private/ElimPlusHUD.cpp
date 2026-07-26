@@ -175,7 +175,7 @@ EInputMode::Type AElimPlusHUD::GetInputMode_Implementation() const
 	{
 		AUTPlayerState* PS = UTPlayerOwner->UTPlayerState;
 		AUTGameState* GS = GetWorld()->GetGameState<AUTGameState>();
-		if (PS && !PS->bOnlySpectator && GS && GS->GetMatchState() == MatchState::InProgress)
+		if (PS && !PS->IsOnlyASpectator() && GS && GS->GetMatchState() == MatchState::InProgress)
 		{
 			return EInputMode::EIM_GameOnly;
 		}
@@ -204,7 +204,7 @@ void AElimPlusHUD::GetPlayerListForIcons(TArray<AUTPlayerState*>& SortedPlayers)
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (UTPS != nullptr && !UTPS->bOnlySpectator && !UTPS->bIsInactive
+		if (UTPS != nullptr && !UTPS->IsOnlyASpectator() && !UTPS->IsInactive()
 			&& (UTPS->Team != nullptr || UTPS->GetTeamNum() != 255))
 		{
 			UTPS->SelectionOrder = (UTPS == HUDPS) ? -1 : UTPS->SpectatingIDTeam;
@@ -272,7 +272,7 @@ void AElimPlusHUD::DrawSpectatorTarget()
 	if (!ViewPawn) return;
 	if (ViewPawn == UTPlayerOwner->GetPawn()) return;   // own pawn = playing
 
-	AUTPlayerState* PS = Cast<AUTPlayerState>(ViewPawn->PlayerState);
+	AUTPlayerState* PS = Cast<AUTPlayerState>(ViewPawn->GetPlayerState());
 	if (!PS || PS->GetPlayerName().IsEmpty()) return;
 
 	const float RenderScale = float(Canvas->SizeX) / 1920.0f;
@@ -543,8 +543,8 @@ void AElimPlusHUD::DrawHUD()
 				if (!PC.bUidValid)
 				{
 					// UniqueId never changes — build the replicator key once per player.
-					PC.UidStr = UTPS->UniqueId.IsValid()
-						? UTPS->UniqueId.ToString()
+					PC.UidStr = UTPS->GetUniqueId().IsValid()
+						? UTPS->GetUniqueId().ToString()
 						: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 					PC.bUidValid = true;
 				}
@@ -622,7 +622,7 @@ void AElimPlusHUD::DrawHUD()
 		AUTPlayerState* MyPS = GetScorerPlayerState();
 		if (MyPS && Canvas && SmallFont && !NCPlusHUDDrawCall::IsHidden(TEXT("score_kda")))
 		{
-			const int32 Score = FMath::TruncToInt(MyPS->Score);
+			const int32 Score = FMath::TruncToInt(MyPS->GetScore());
 			const int32 Kills = MyPS->Kills;
 			const int32 Deaths = MyPS->Deaths;
 			const int32 Assists = MyPS->KillAssists;
@@ -927,7 +927,7 @@ void AElimPlusHUD::DrawPlayerIcon(AUTPlayerState* PlayerState, bool bPlayerAlive
 		AUTGameState* MatchGS = GetWorld()->GetGameState<AUTGameState>();
 		const bool bSameTeam  = MyPS && MyPS->GetTeamNum() == PlayerState->GetTeamNum();
 		const bool bRoundOver = MatchGS && MatchGS->GetMatchState() != MatchState::InProgress;
-		const bool bTrueSpec  = MyPS && MyPS->bOnlySpectator;
+		const bool bTrueSpec  = MyPS && MyPS->IsOnlyASpectator();
 		if (MyPS && MyPS != PlayerState && (bSameTeam || bRoundOver || bTrueSpec))
 		{
 			AUTCharacter* UTC = PlayerState->GetUTCharacter();
@@ -969,7 +969,7 @@ FLinearColor AElimPlusHUD::GetBaseHUDColor()
 	APawn* HUDPawn = Cast<APawn>(UTPlayerOwner->GetViewTarget());
 	if (HUDPawn)
 	{
-		AUTPlayerState* PS = Cast<AUTPlayerState>(HUDPawn->PlayerState);
+		AUTPlayerState* PS = Cast<AUTPlayerState>(HUDPawn->GetPlayerState());
 		if (PS != nullptr && PS->Team != nullptr)
 		{
 			TeamColor = PS->Team->TeamColor;
@@ -1101,11 +1101,11 @@ void AElimPlusHUD::DrawPreMatchTeamPreview()
 		for (APlayerState* PS : GS->PlayerArray)
 		{
 			AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-			if (!UTPS || UTPS->bOnlySpectator) continue;
+			if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 			if (UTPS->GetTeamNum() != TeamIdx) continue;
 
-			const FString Key = UTPS->UniqueId.IsValid()
-				? UTPS->UniqueId.ToString()
+			const FString Key = UTPS->GetUniqueId().IsValid()
+				? UTPS->GetUniqueId().ToString()
 				: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 			const int32 Elo = Stats ? Stats->GetEloForPlayer(Key) : 1400;
 			TeamStrength += Elo;

@@ -32,7 +32,7 @@ bool UNCPlusHUDWidget_Speedometer::ShouldDraw_Implementation(bool bShowScores)
 	if (bShowScores) return false;
 	if (!IsValid(UTHUDOwner) || !IsValid(UTHUDOwner->UTPlayerOwner)) return false;
 	AUTPlayerState* PS = UTHUDOwner->UTPlayerOwner->UTPlayerState;
-	if (!IsValid(PS) || PS->bOnlySpectator) return false;
+	if (!IsValid(PS) || PS->IsOnlyASpectator()) return false;
 
 	// Opt-in via nchud editor; no entry = hidden.
 	const FNCPlusHUDElement* E = FNCPlusHUDLayout::GetLive().Find(TEXT("speedometer"));

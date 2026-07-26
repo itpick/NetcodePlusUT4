@@ -27,7 +27,7 @@ void AElimPlusStatsReplicator::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 
 void AElimPlusStatsReplicator::SetBalanceTeamsActive(bool bActive)
 {
-	if (Role != ROLE_Authority) return;
+	if (GetLocalRole() != ROLE_Authority) return;
 	bBalanceTeamsActive = bActive;
 }
 
@@ -40,7 +40,7 @@ void AElimPlusStatsReplicator::BeginPlay()
 void AElimPlusStatsReplicator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (Role != ROLE_Authority)
+	if (GetLocalRole() != ROLE_Authority)
 	{
 		return;
 	}
@@ -65,7 +65,7 @@ void AElimPlusStatsReplicator::UpdateFromPlayerStates()
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || UTPS->bOnlySpectator)
+		if (!UTPS || UTPS->IsOnlyASpectator())
 		{
 			continue;
 		}
@@ -74,8 +74,8 @@ void AElimPlusStatsReplicator::UpdateFromPlayerStates()
 		// shape used everywhere else (rating system, balancer). Lets bot ELOs
 		// flow through the same replicator path when bRandomizeBotElo is on.
 		FElimPlusStatsEntry Entry;
-		Entry.PlayerId = UTPS->UniqueId.IsValid()
-			? UTPS->UniqueId.ToString()
+		Entry.PlayerId = UTPS->GetUniqueId().IsValid()
+			? UTPS->GetUniqueId().ToString()
 			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		// PPR(Current) — pulled from server-only side cache populated by gamemode
@@ -235,19 +235,19 @@ float AElimPlusStatsReplicator::GetLinkGunAccuracyForPlayer(const FString& Uniqu
 
 void AElimPlusStatsReplicator::SetPlayerPPRCurrent(const FString& UniqueIdStr, float Value)
 {
-	if (Role != ROLE_Authority) return;
+	if (GetLocalRole() != ROLE_Authority) return;
 	PPRCurrentCache.FindOrAdd(UniqueIdStr) = Value;
 }
 
 void AElimPlusStatsReplicator::SetPlayerEloAndDelta(const FString& UniqueIdStr, int32 NewElo, int32 DeltaThisMatch)
 {
-	if (Role != ROLE_Authority) return;
+	if (GetLocalRole() != ROLE_Authority) return;
 	EloCache.FindOrAdd(UniqueIdStr) = NewElo;
 	EloDeltaCache.FindOrAdd(UniqueIdStr) = DeltaThisMatch;
 }
 
 void AElimPlusStatsReplicator::SetPlayerGlobalRank(const FString& UniqueIdStr, int32 Rank)
 {
-	if (Role != ROLE_Authority) return;
+	if (GetLocalRole() != ROLE_Authority) return;
 	GlobalRankCache.FindOrAdd(UniqueIdStr) = Rank;
 }

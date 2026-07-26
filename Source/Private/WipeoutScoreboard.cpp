@@ -375,7 +375,7 @@ void UWipeoutScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState, fl
 		if (UTHUDOwner && UTHUDOwner->UTPlayerOwner && UTHUDOwner->UTPlayerOwner->UTPlayerState)
 		{
 			AUTPlayerState* LocalPS = UTHUDOwner->UTPlayerOwner->UTPlayerState;
-			bShowBars = UTGameState->OnSameTeam(PlayerState, LocalPS) || LocalPS->bOnlySpectator;
+			bShowBars = UTGameState->OnSameTeam(PlayerState, LocalPS) || LocalPS->IsOnlyASpectator();
 		}
 
 		if (bShowBars)
@@ -436,7 +436,7 @@ void UWipeoutScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState, fl
 	}
 	else if (GetWorld()->GetNetMode() != NM_Standalone)
 	{
-		int32 Ping = bIsOwner ? PlayerState->ExactPing : (PlayerState->Ping * 4);
+		int32 Ping = bIsOwner ? PlayerState->ExactPing : (PlayerState->GetCompressedPing() * 4);
 		FLinearColor PingColor = (Ping < 60) ? FLinearColor(0.25f, 1.f, 0.25f, 1.f)
 			: (Ping < 120) ? FLinearColor(1.f, 1.f, 0.25f, 1.f)
 			: FLinearColor(1.f, 0.25f, 0.25f, 1.f);
@@ -494,9 +494,9 @@ void UWipeoutScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XOff
 				break;
 			}
 		}
-		if (DmgRep && PlayerState->UniqueId.IsValid())
+		if (DmgRep && PlayerState->GetUniqueId().IsValid())
 		{
-			FString PId = PlayerState->UniqueId.ToString();
+			FString PId = PlayerState->GetUniqueId().ToString();
 			Belts = DmgRep->GetBeltsForPlayer(PId);
 			Amps = DmgRep->GetAmpsForPlayer(PId);
 		}
@@ -521,9 +521,9 @@ void UWipeoutScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XOff
 				break;
 			}
 		}
-		if (DmgRep && PlayerState->UniqueId.IsValid())
+		if (DmgRep && PlayerState->GetUniqueId().IsValid())
 		{
-			Damage = DmgRep->GetDamageForPlayer(PlayerState->UniqueId.ToString());
+			Damage = DmgRep->GetDamageForPlayer(PlayerState->GetUniqueId().ToString());
 		}
 		else
 		{
@@ -578,7 +578,7 @@ void UWipeoutScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 			AUTPlayerState* PlayerState = Cast<AUTPlayerState>(UTGameState->PlayerArray[i]);
 			if (PlayerState)
 			{
-				if (!PlayerState->bOnlySpectator)
+				if (!PlayerState->IsOnlyASpectator())
 				{
 					if (PlayerState->GetTeamNum() == Team)
 					{

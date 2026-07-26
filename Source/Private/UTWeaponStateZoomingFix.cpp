@@ -50,7 +50,7 @@ bool UUTWeaponStateZoomingFix::DrawHUD(UUTHUDWidget* WeaponHudWidget)
                     // Filter targets (Alive, Visible, Enemy)
                     if (EnemyChar != NULL && !EnemyChar->IsDead() && !EnemyChar->IsInvisible() &&
                         !EnemyChar->IsFeigningDeath() &&
-                        (EnemyChar->GetMesh()->LastRenderTime > WorldTime - 0.25f) &&
+                        (EnemyChar->GetMesh()->GetLastRenderTime() > WorldTime - 0.25f) &&
                         EnemyChar != GetUTOwner() &&
                         (GS == NULL || !GS->OnSameTeam(EnemyChar, GetUTOwner())))
                     {
@@ -88,7 +88,7 @@ bool UUTWeaponStateZoomingFix::DrawHUD(UUTHUDWidget* WeaponHudWidget)
 
                                 // FORCE RED COLOR (1.0, 0.0, 0.0)
                                 FLinearColor TargetColor = FLinearColor(1.0f, 0.0f, 0.0f, 0.5f);
-                                FCanvasTileItem HeadCircleItem(UpperLeft, TargetIndicator->Resource, BottomRight - UpperLeft, TargetColor);
+                                FCanvasTileItem HeadCircleItem(UpperLeft, TargetIndicator->GetResource(), BottomRight - UpperLeft, TargetColor);
                                 HeadCircleItem.BlendMode = SE_BLEND_Translucent;
                                 C->DrawItem(HeadCircleItem);
                             }

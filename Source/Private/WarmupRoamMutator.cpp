@@ -135,8 +135,8 @@ AUTPlayerState* AWarmupRoamMutator::ResolveHostPS(bool& bOutHostConfigured) cons
 			AUTPlayerState* PS = Cast<AUTPlayerState>(GS->PlayerArray[i]);
 			// Mirror the engine host loop's match (UTGameMode::ReadyToStartMatch):
 			// id equality, case-insensitive, skip inactive.
-			if (PS != nullptr && !PS->bIsInactive && PS->UniqueId.IsValid()
-				&& HostId.Equals(PS->UniqueId.ToString(), ESearchCase::IgnoreCase))
+			if (PS != nullptr && !PS->IsInactive() && PS->GetUniqueId().IsValid()
+				&& HostId.Equals(PS->GetUniqueId().ToString(), ESearchCase::IgnoreCase))
 			{
 				return PS;
 			}
@@ -152,7 +152,7 @@ void AWarmupRoamMutator::PostPlayerInit_Implementation(AController* C)
 	// Auto-announce the match host on join — pushed counterpart of `mutate host`.
 	// PostPlayerInit also fires for bots; only humans get console lines.
 	AUTPlayerState* PS = (C != nullptr) ? Cast<AUTPlayerState>(C->PlayerState) : nullptr;
-	if (C == nullptr || (PS != nullptr && PS->bIsABot))
+	if (C == nullptr || (PS != nullptr && PS->IsABot()))
 	{
 		return;
 	}

@@ -335,11 +335,11 @@ void AElimPlusGame::HandleMatchHasStarted()
 			for (APlayerState* PS : GS->PlayerArray)
 			{
 				AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-				if (!UTPS || UTPS->bOnlySpectator) continue;
+				if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
-				if (UTPS->UniqueId.IsValid())
+				if (UTPS->GetUniqueId().IsValid())
 				{
-					const FString UidStr = UTPS->UniqueId.ToString();
+					const FString UidStr = UTPS->GetUniqueId().ToString();
 					const int32 Elo = RatingSystem->GetCachedElo(UidStr);
 					StatsReplicator->SetPlayerEloAndDelta(UidStr, Elo, 0);
 					// Global leaderboard rank (1-based, frozen for the match like ELO).
@@ -410,9 +410,9 @@ void AElimPlusGame::PostLogin(APlayerController* NewPlayer)
 	}
 
 	AUTPlayerState* UTPS = Cast<AUTPlayerState>(NewPlayer->PlayerState);
-	if (UTPS && UTPS->UniqueId.IsValid())
+	if (UTPS && UTPS->GetUniqueId().IsValid())
 	{
-		const FString UidStr = UTPS->UniqueId.ToString();
+		const FString UidStr = UTPS->GetUniqueId().ToString();
 		RatingSystem->LoadPlayerFromDB(GetWorld(), UidStr, UTPS->GetPlayerName());
 
 		// Mid-match joiner: baseline them as of NOW so the end-of-match scoreboard
@@ -443,8 +443,8 @@ void AElimPlusGame::PostLogin(APlayerController* NewPlayer)
 			for (APlayerState* PS : GS->PlayerArray)
 			{
 				AUTPlayerState* OtherPS = Cast<AUTPlayerState>(PS);
-				if (!OtherPS || OtherPS->bOnlySpectator) continue;
-				if (OtherPS->UniqueId.IsValid()) continue;  // human, handled by their own PostLogin
+				if (!OtherPS || OtherPS->IsOnlyASpectator()) continue;
+				if (OtherPS->GetUniqueId().IsValid()) continue;  // human, handled by their own PostLogin
 				const FString BotKey = FString::Printf(TEXT("BOT:%s"), *OtherPS->GetPlayerName());
 				const int32 BotElo = RatingSystem->GetOrAssignBotElo(BotKey);
 				StatsReplicator->SetPlayerEloAndDelta(BotKey, BotElo, 0);
@@ -494,16 +494,16 @@ void AElimPlusGame::HandleMatchHasEnded()
 			for (APlayerState* APS : GS->PlayerArray)
 			{
 				AUTPlayerState* UTPS = Cast<AUTPlayerState>(APS);
-				if (!UTPS || UTPS->bOnlySpectator) continue;
+				if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 				// Bots have invalid UniqueId — rating system filter drops them, but
 				// we can short-circuit here to avoid bloating the payload.
-				if (!UTPS->UniqueId.IsValid()) continue;
+				if (!UTPS->GetUniqueId().IsValid()) continue;
 
 				FNCElimPlusPlayerInput P;
 				// ElimPlus rating system keys on UniqueId.ToString() (see PostLogin
 				// at LoadPlayerFromDB call). Must match exactly or the cache lookup
 				// in BuildResultPayload misses.
-				P.UniqueId   = UTPS->UniqueId.ToString();
+				P.UniqueId   = UTPS->GetUniqueId().ToString();
 				P.PlayerName = UTPS->GetPlayerName();
 				P.TeamIndex  = UTPS->GetTeamNum();
 				P.Kills      = UTPS->Kills;
@@ -721,7 +721,7 @@ void AElimPlusGame::HandleServerManagement()
 		// Update the Replay id.
 	if (UTIsHandlingReplays())
 	{
-		UDemoNetDriver* DemoNetDriver = GetWorld()->DemoNetDriver;
+		UDemoNetDriver* DemoNetDriver = GetWorld()->GetDemoNetDriver();
 		if (DemoNetDriver != nullptr && DemoNetDriver->ReplayStreamer.IsValid())
 		{
 			UTGameState->ReplayID = DemoNetDriver->ReplayStreamer->GetReplayID();
@@ -859,7 +859,7 @@ void AElimPlusGame::HandleInstanceCleanup()
 	}
 
 	// 3. Hub beacon connection monitoring
-	if (LobbyBeacon && LobbyBeacon->GetNetConnection()->State == EConnectionState::USOCK_Closed)
+	if (LobbyBeacon && LobbyBeacon->GetNetConnection()->GetConnectionState() == EConnectionState::USOCK_Closed)
 	{
 		if (!bDedicatedInstance && NumPlayers <= 0 && MatchState != MatchState::WaitingToStart)
 		{
@@ -1005,7 +1005,7 @@ void AElimPlusGame::StartNextRound()
 		if (!C) continue;
 
 		AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-		if (PS && !PS->bOnlySpectator)
+		if (PS && !PS->IsOnlyASpectator())
 		{
 			PS->bOutOfLives = false;
 			PS->ForceNetUpdate();
@@ -1043,7 +1043,7 @@ void AElimPlusGame::ProcessNextSpawn()
 		if (!C || !IsValid(C)) continue;
 
 		AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-		if (!PS || PS->bOnlySpectator) continue;
+		if (!PS || PS->IsOnlyASpectator()) continue;
 
 		// Spawn this player
 		RestartPlayer(C);
@@ -1157,7 +1157,7 @@ void AElimPlusGame::EndRoundForTeam(int32 WinnerTeamIndex, FName Reason)
 			for (APlayerState* PS : GS->PlayerArray)
 			{
 				AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-				if (!UTPS || UTPS->bOnlySpectator || !UTPS->UniqueId.IsValid()) continue;
+				if (!UTPS || UTPS->IsOnlyASpectator() || !UTPS->GetUniqueId().IsValid()) continue;
 
 				// PPR damage = PlayerRoundDamage, which now accumulates OVERKILL-INCLUSIVE
 				// damage per round (full hit value incl. the portion beyond victim HP —
@@ -1175,7 +1175,7 @@ void AElimPlusGame::EndRoundForTeam(int32 WinnerTeamIndex, FName Reason)
 				const int32 RoundCount = PerPlayerMatchPPRRoundCount[UTPS];
 				const float MatchMean = (RoundCount > 0) ? (PerPlayerMatchPPRSum[UTPS] / RoundCount) : 0.f;
 
-				const FString UidStr = UTPS->UniqueId.ToString();
+				const FString UidStr = UTPS->GetUniqueId().ToString();
 				StatsReplicator->SetPlayerPPRCurrent(UidStr, MatchMean);
 
 				// Lifetime PPR + DPR — fold this round's contribution into the rating

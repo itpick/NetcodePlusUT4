@@ -395,7 +395,7 @@ namespace
 	{
 		if (!Canvas || Tris.Num() == 0) return;
 		FCanvasTriangleItem Item(FVector2D::ZeroVector, FVector2D::ZeroVector, FVector2D::ZeroVector,
-			Canvas->DefaultTexture ? Canvas->DefaultTexture->Resource : GWhiteTexture);
+			Canvas->DefaultTexture ? Canvas->DefaultTexture->GetResource() : GWhiteTexture);
 		Item.TriangleList = MoveTemp(Tris);
 		Item.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(Item);

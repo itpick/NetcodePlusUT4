@@ -32,7 +32,7 @@ void ANCShaftArenaStatsReplicator::BeginPlay()
 void ANCShaftArenaStatsReplicator::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (Role != ROLE_Authority) return;
+	if (GetLocalRole() != ROLE_Authority) return;
 	TimeSinceLastUpdate += DeltaTime;
 	if (TimeSinceLastUpdate >= UpdateInterval)
 	{
@@ -51,11 +51,11 @@ void ANCShaftArenaStatsReplicator::UpdateFromPlayerStates()
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
 		FNCShaftArenaStatsEntry Entry;
-		Entry.PlayerId = UTPS->UniqueId.IsValid()
-			? UTPS->UniqueId.ToString()
+		Entry.PlayerId = UTPS->GetUniqueId().IsValid()
+			? UTPS->GetUniqueId().ToString()
 			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		// Link accuracy (Quake-style): per-beam-tick hit ratio.

@@ -78,9 +78,9 @@ void UShockDomScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XOf
 
 	// Captures
 	int32 Captures = 0;
-	if (DomRep && PlayerState->UniqueId.IsValid())
+	if (DomRep && PlayerState->GetUniqueId().IsValid())
 	{
-		Captures = DomRep->GetCapturesForPlayer(PlayerState->UniqueId.ToString());
+		Captures = DomRep->GetCapturesForPlayer(PlayerState->GetUniqueId().ToString());
 	}
 	FLinearColor CapColor = FLinearColor(0.2f, 1.f, 0.4f, 1.f); // Green
 	if (!PlayerState->GetUTCharacter()) CapColor *= 0.6f;
@@ -89,9 +89,9 @@ void UShockDomScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XOf
 
 	// Damage — from DOM replicator (reuse the one we already found)
 	int32 Damage = 0;
-	if (DomRep && PlayerState->UniqueId.IsValid())
+	if (DomRep && PlayerState->GetUniqueId().IsValid())
 	{
-		Damage = DomRep->GetDamageForPlayer(PlayerState->UniqueId.ToString());
+		Damage = DomRep->GetDamageForPlayer(PlayerState->GetUniqueId().ToString());
 	}
 	else
 	{

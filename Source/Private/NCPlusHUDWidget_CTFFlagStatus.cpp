@@ -76,7 +76,7 @@ void UNCPlusHUDWidget_CTFFlagStatus::DrawFlagWorld(AUTCTFGameState* GameState,
 
 	bScaleByDesignedResolution = false;
 
-	const bool bSpectating = UTPlayerOwner->PlayerState && UTPlayerOwner->PlayerState->bOnlySpectator;
+	const bool bSpectating = UTPlayerOwner->PlayerState && UTPlayerOwner->PlayerState->IsOnlyASpectator();
 	const bool bIsEnemyFlag = !GameState->OnSameTeam(Flag, UTPlayerOwner);
 
 	FlagIconTemplate.RenderColor = GameState->Teams.IsValidIndex(TeamNum)
@@ -302,7 +302,7 @@ void UNCPlusHUDWidget_CTFFlagStatus::DrawStatusMessage(float DeltaTime)
 	if (!GS->IsMatchInProgress() || UTHUDOwner == nullptr || UTHUDOwner->PlayerOwner == nullptr) return;
 
 	APawn* ViewedPawn = Cast<APawn>(UTHUDOwner->UTPlayerOwner->GetViewTarget());
-	AUTPlayerState* ViewedPS = ViewedPawn ? Cast<AUTPlayerState>(ViewedPawn->PlayerState) : nullptr;
+	AUTPlayerState* ViewedPS = ViewedPawn ? Cast<AUTPlayerState>(ViewedPawn->GetPlayerState()) : nullptr;
 	AUTPlayerState* OwnerPS = ViewedPS ? ViewedPS : UTHUDOwner->UTPlayerOwner->UTPlayerState;
 	if (OwnerPS == nullptr || OwnerPS->Team == nullptr) return;
 

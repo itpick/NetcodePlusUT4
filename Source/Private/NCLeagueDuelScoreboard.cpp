@@ -189,8 +189,8 @@ void UNCLeagueDuelScoreboard::DrawPlayerScore(AUTPlayerState* PS, float XOffset,
 	// UPROPERTY() with no Replicated specifier, so on remote clients every
 	// per-weapon hit/shot stat reads 0. ANCLeagueDuelStatsReplicator snapshots
 	// the values server-side at 1Hz and replicates the percentage.
-	const FString PlayerId = PS->UniqueId.IsValid()
-		? PS->UniqueId.ToString()
+	const FString PlayerId = PS->GetUniqueId().IsValid()
+		? PS->GetUniqueId().ToString()
 		: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 	float Pct = 0.f;
 	if (ANCLeagueDuelStatsReplicator* Rep = FindNCLeagueDuelStatsReplicator(GetWorld()))
@@ -386,9 +386,9 @@ void UNCLeagueDuelScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerStat
 		float NumPlayers = 0.0f;
 		for (int32 i = 0; i < UTGameState->PlayerArray.Num(); i++)
 		{
-			if (!UTGameState->PlayerArray[i]->bIsSpectator
-				&& !UTGameState->PlayerArray[i]->bOnlySpectator
-				&& !UTGameState->PlayerArray[i]->bIsABot)
+			if (!UTGameState->PlayerArray[i]->IsSpectator()
+				&& !UTGameState->PlayerArray[i]->IsOnlyASpectator()
+				&& !UTGameState->PlayerArray[i]->IsABot())
 			{
 				if (!UTGameState->bOnlyTeamCanVoteKick
 					|| UTGameState->OnSameTeam(PlayerState, UTGameState->PlayerArray[i]))
@@ -457,7 +457,7 @@ void UNCLeagueDuelScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerStat
 		YOffset + ColumnY, RenderScale);
 	if (UTGameState && UTGameState->HasMatchStarted())
 	{
-		if (PlayerState->bPendingTeamSwitch && !PlayerState->bIsABot)
+		if (PlayerState->bPendingTeamSwitch && !PlayerState->IsABot())
 		{
 			DrawText(TeamSwapText, XOffset + (ScaledCellWidth * ColumnHeaderScoreX),
 				YOffset + ColumnY, UTHUDOwner->SmallFont, RenderScale, 1.0f,
@@ -481,7 +481,7 @@ void UNCLeagueDuelScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerStat
 		AUTBot* Bot = Cast<AUTBot>(PlayerState->GetOwner());
 		if (!Bot && GetWorld()->GetNetMode() != NM_Standalone)
 		{
-			int32 Ping = PlayerState->Ping * 4;
+			int32 Ping = PlayerState->GetCompressedPing() * 4;
 			if (UTHUDOwner && UTHUDOwner->UTPlayerOwner
 				&& UTHUDOwner->UTPlayerOwner->UTPlayerState == PlayerState)
 			{

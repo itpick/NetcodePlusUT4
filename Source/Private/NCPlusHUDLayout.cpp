@@ -52,7 +52,7 @@ ENCPlusHUDAnchor FNCPlusHUDLayout::ParseAnchor(const FString& Name)
 {
 	// .Trim() mutates in place (UE4 4.15) — need a non-const copy.
 	FString N = Name;
-	N.Trim();
+	N.TrimStartAndEnd();
 	N = N.ToLower();
 	if (N == TEXT("topleft"))      return ENCPlusHUDAnchor::TopLeft;
 	if (N == TEXT("topcenter"))    return ENCPlusHUDAnchor::TopCenter;
@@ -75,7 +75,7 @@ namespace NCPlusHPArmorStyle
 	ENCPlusHPArmorStyle Parse(const FString& Name)
 	{
 		FString N = Name;
-		N.Trim();
+		N.TrimStartAndEnd();
 		N = N.ToLower();
 		if (N == TEXT("segmentedbars"))     return ENCPlusHPArmorStyle::SegmentedBars;
 		if (N == TEXT("radialarcs"))        return ENCPlusHPArmorStyle::RadialArcs;
@@ -315,7 +315,7 @@ namespace NCPlusAmmoStyle
 	ENCPlusAmmoStyle Parse(const FString& Name)
 	{
 		FString N = Name;
-		N.Trim();
+		N.TrimStartAndEnd();
 		N = N.ToLower();
 		if (N == TEXT("iconandcount"))  return ENCPlusAmmoStyle::IconAndCount;
 		if (N == TEXT("verticalgauge")) return ENCPlusAmmoStyle::VerticalGauge;
@@ -376,7 +376,7 @@ namespace NCPlusHUDColor
 	bool TryParse(const FString& Hex, FLinearColor& Out)
 	{
 		FString S = Hex;
-		S.Trim();
+		S.TrimStartAndEnd();
 		if (S.StartsWith(TEXT("#"))) S = S.RightChop(1);
 		if (S.Len() != 6 && S.Len() != 8) return false;
 
@@ -432,7 +432,7 @@ bool FNCPlusHUDElement::GetExtraBool(FName Key, bool Fallback) const
 	const FString* V = Extras.Find(Key);
 	if (!V || V->IsEmpty()) return Fallback;
 	FString S = *V;
-	S.Trim();
+	S.TrimStartAndEnd();
 	S = S.ToLower();
 	if (S == TEXT("true")  || S == TEXT("1")) return true;
 	if (S == TEXT("false") || S == TEXT("0")) return false;
@@ -482,7 +482,7 @@ FName FNCPlusHUDLayout::GetWeaponSide(UClass* WeaponClass) const
 
 FString FNCPlusHUDLayout::GetDefaultLayoutPath()
 {
-	return FPaths::GameSavedDir() / TEXT("NetcodePlus") / TEXT("HUDLayout.json");
+	return FPaths::ProjectSavedDir() / TEXT("NetcodePlus") / TEXT("HUDLayout.json");
 }
 
 // Cached so the per-frame DrawHeldPowerups call never hits GConfig/FileExists (mirror
@@ -1235,7 +1235,7 @@ namespace NCPlusHUDDrawCall
 			if (AUTPlayerState* MyPS = Cast<AUTPlayerState>(HUD->UTPlayerOwner->PlayerState))
 			{
 				MyTeam = MyPS->GetTeamNum();
-				bRevealAllVitals |= MyPS->bOnlySpectator;
+				bRevealAllVitals |= MyPS->IsOnlyASpectator();
 			}
 		}
 
@@ -1263,7 +1263,7 @@ namespace NCPlusHUDDrawCall
 
 		// White texture for the slanted plate fills (DrawTile is axis-aligned, so the
 		// slant needs triangle items).
-		FTexture* WhiteTex = (Canvas->DefaultTexture) ? Canvas->DefaultTexture->Resource : nullptr;
+		FTexture* WhiteTex = (Canvas->DefaultTexture) ? Canvas->DefaultTexture->GetResource() : nullptr;
 		if (!WhiteTex) return;
 
 		// Two accumulation passes → one batched draw. Collect every slanted plate quad
@@ -1337,7 +1337,7 @@ namespace NCPlusHUDDrawCall
 			for (APlayerState* PSBase : GS->PlayerArray)
 			{
 				AUTPlayerState* PS = Cast<AUTPlayerState>(PSBase);
-				if (!PS || PS->bOnlySpectator || PS->bIsInactive) continue;
+				if (!PS || PS->IsOnlyASpectator() || PS->IsInactive()) continue;
 				if (PS->GetTeamNum() != TeamIdx) continue;
 
 				// Alive check — controller's pawn on the server, GetUTCharacter()
@@ -1600,9 +1600,9 @@ namespace NCPlusHUDDrawCall
 		};
 
 		const TArray<UClass*> WantClasses = bWantStock
-			? Resolve(StockPaths, ARRAY_COUNT(StockPaths)) : Resolve(NCPlusPaths, ARRAY_COUNT(NCPlusPaths));
+			? Resolve(StockPaths, UE_ARRAY_COUNT(StockPaths)) : Resolve(NCPlusPaths, UE_ARRAY_COUNT(NCPlusPaths));
 		const TArray<UClass*> DropClasses = bWantStock
-			? Resolve(NCPlusPaths, ARRAY_COUNT(NCPlusPaths)) : Resolve(StockPaths, ARRAY_COUNT(StockPaths));
+			? Resolve(NCPlusPaths, UE_ARRAY_COUNT(NCPlusPaths)) : Resolve(StockPaths, UE_ARRAY_COUNT(StockPaths));
 
 		// Drop the family we no longer want (stops it drawing; the widget GCs once unreferenced).
 		for (int32 i = HUD->HudWidgets.Num() - 1; i >= 0; i--)
@@ -1654,7 +1654,7 @@ namespace NCPlusHUDDrawCall
 		// the source world's recording driver always reports IsPlaying()==false; it covers a true full
 		// demo-playback session.
 		AUTGameState* GS = World->GetGameState<AUTGameState>();
-		const bool bReplaying = (World->DemoNetDriver != nullptr && World->DemoNetDriver->IsPlaying());
+		const bool bReplaying = (World->GetDemoNetDriver() != nullptr && World->GetDemoNetDriver()->IsPlaying());
 		if (GS == nullptr || !GS->HasMatchEnded() || bReplaying)
 		{
 			StableFrames = 0.f;
@@ -1759,7 +1759,7 @@ namespace NCPlusHUDDrawCall
 
 	static FString FindNewestFireValCsv()
 	{
-		const FString Dir = FPaths::GameSavedDir() / TEXT("Logs");
+		const FString Dir = FPaths::ProjectSavedDir() / TEXT("Logs");
 		TArray<FString> Names;
 		IFileManager::Get().FindFiles(Names, *(Dir / TEXT("FireVal_*.csv")), true, false);
 		FString Best;
@@ -1807,7 +1807,7 @@ namespace NCPlusHUDDrawCall
 
 		UWorld* World = HUD->GetWorld();
 		// Replay-only: identical guard the plugin uses elsewhere (UTPlusProj_ShockBall).
-		if (World == nullptr || World->DemoNetDriver == nullptr || !World->DemoNetDriver->IsPlaying()) return;
+		if (World == nullptr || World->GetDemoNetDriver() == nullptr || !World->DemoNetDriver->IsPlaying()) return;
 
 		AGameStateBase* GS = World->GetGameState();
 		UFont* Font = HUD->SmallFont;

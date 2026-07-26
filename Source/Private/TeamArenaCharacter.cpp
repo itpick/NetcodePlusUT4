@@ -570,7 +570,7 @@ int32 ATeamArenaCharacter::GetNetcodeVersion()
 
 float ATeamArenaCharacter::GetClientVisualPredictionTime() const
 {
-	if (PlayerState && GetNetMode() == NM_Client)
+	if (GetPlayerState() && GetNetMode() == NM_Client)
 	{
 		// 1. Opt-Out Check
 		if (CVarEnableProjectilePrediction.GetValueOnGameThread() == 0)
@@ -590,7 +590,7 @@ float ATeamArenaCharacter::GetClientVisualPredictionTime() const
 
 			// Projectile weapons: Apply visual prediction
 			float Fudge = 20.0f;
-			float AdjustedPing = FMath::Max(0.0f, PlayerState->ExactPing - Fudge);
+			float AdjustedPing = FMath::Max(0.0f, GetPlayerState()->ExactPing - Fudge);
 			float OneWayLatency = AdjustedPing * 0.0005f;
 			return FMath::Min(OneWayLatency, 0.10f);
 		}
@@ -976,7 +976,7 @@ void ATeamArenaCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	// SERVER ONLY: Register our custom material so SetCharacterOverlayEffect works without warnings
-	if (Role == ROLE_Authority && SpawnProtectionMaterial)
+	if (GetLocalRole() == ROLE_Authority && SpawnProtectionMaterial)
 	{
 		AUTGameState* GS = GetWorld()->GetGameState<AUTGameState>();
 		if (GS)
@@ -1012,7 +1012,7 @@ void ATeamArenaCharacter::Tick(float DeltaTime)
 			bPingCompensatedSpawnPending = false;
 			ServerConfirmSpawnReady();
 		}
-		else if (Role == ROLE_Authority)
+		else if (GetLocalRole() == ROLE_Authority)
 		{
 			// Final safety: force-reveal after 500ms if the RevealRttPct timer somehow
 			// didn't fire (belt-and-suspenders; normally the timer reveals first).
@@ -1195,7 +1195,7 @@ void ATeamArenaCharacter::Tick(float DeltaTime)
 
 		if (USkeletalMeshComponent* MainMesh = GetMesh())
 		{
-			const float SinceRendered = GetWorld()->GetTimeSeconds() - MainMesh->LastRenderTime;
+			const float SinceRendered = GetWorld()->GetTimeSeconds() - MainMesh->GetLastRenderTime();
 			if (SinceRendered > 0.1f)
 			{
 				bShouldShow = false;
