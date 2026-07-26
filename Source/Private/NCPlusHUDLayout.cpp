@@ -691,7 +691,7 @@ FNCPlusHUDLayout FNCPlusHUDLayout::FromJsonString(const FString& Raw, bool& bOut
 		static const TSet<FString> KnownKeys = { TEXT("anchor"), TEXT("offset_x"), TEXT("offset_y"), TEXT("scale"), TEXT("hidden") };
 		for (const auto& Field : E->Values)
 		{
-			if (KnownKeys.Contains(Field.Key)) continue;
+			if (KnownKeys.Contains(FString(Field.Key))) continue;
 			FString StrVal;
 			if (Field.Value.IsValid() && Field.Value->TryGetString(StrVal))
 			{

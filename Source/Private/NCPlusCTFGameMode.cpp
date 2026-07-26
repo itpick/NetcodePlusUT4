@@ -678,7 +678,7 @@ void ANCPlusCTFGameMode::LoadCTFPerfConfig()
 
 	FConfigFile ModIni;
 	ModIni.Read(ModIniPath);
-	const FConfigSection* Section = ModIni.Find(TEXT("UTPUGS_STATS"));
+	const FConfigSection* Section = ModIni.FindSection(TEXT("UTPUGS_STATS"));
 	if (!Section)
 	{
 		return;
@@ -735,7 +735,7 @@ void ANCPlusCTFGameMode::LoadSpawnConfig()
 
 	FConfigFile ModIni;
 	ModIni.Read(ModIniPath);
-	const FConfigSection* Section = ModIni.Find(TEXT("UTPUGS_SPAWN"));
+	const FConfigSection* Section = ModIni.FindSection(TEXT("UTPUGS_SPAWN"));
 	if (!Section)
 	{
 		return;
@@ -1951,9 +1951,9 @@ void ANCPlusCTFGameMode::HandleMatchHasStarted()
 			for (APlayerState* PS : GS->PlayerArray)
 			{
 				AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-				if (!UTPS || UTPS->bOnlySpectator) continue;
-				if (!UTPS->UniqueId.IsValid()) continue;   // bot
-				const FString Uid = UTPS->UniqueId.ToString();
+				if (!UTPS || UTPS->IsOnlyASpectator()) continue;
+				if (!UTPS->GetUniqueId().IsValid()) continue;   // bot
+				const FString Uid = UTPS->GetUniqueId().ToString();
 				RatingSystem->LoadPlayerFromDB(GetWorld(), Uid);
 				// Present at match start => full presence credit.
 				if (!PlayerJoinWorldTime.Contains(Uid))

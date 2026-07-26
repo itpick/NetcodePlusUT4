@@ -1,8 +1,8 @@
 // TeamArenaCharacterMovement.cpp
 // High-FPS optimized movement component for UT4
 
-#include "EngineUtils.h"
 #include "TeamArenaCharacterMovement.h"
+#include "EngineUtils.h"
 #include "TeamArenaCharacter.h"
 #include "UTGameState.h"
 #include "UTCharacter.h"

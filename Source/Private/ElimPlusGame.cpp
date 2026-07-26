@@ -1,4 +1,5 @@
 #include "ElimPlusGame.h"
+#include "EngineUtils.h"
 #include "NCFireValCollector.h"
 #include "NCPlusVersionGate.h"
 #include "UnrealTournament.h"
@@ -26,7 +27,6 @@
 #include "TimerManager.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerStart.h"
-#include "EngineUtils.h"
 #include "ElimPlusVictoryMessage.h"
 #include "UTCountDownMessage.h" 
 #include "UTGameMessage.h"
@@ -1538,7 +1538,7 @@ void AElimPlusGame::CleanupWorldForNewRound()
 	}
 	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
-		if (AUTCharacter* UTC = Cast<AUTCharacter>(It->Get()))
+		if (AUTCharacter* UTC = Cast<AUTCharacter>(*It))
 		{
 			if (UTC->IsDead() && IsValid(UTC))
 			{
@@ -1944,7 +1944,7 @@ AActor* AElimPlusGame::ChoosePlayerStart_Implementation(AController* Player)
 		const FVector SpawnLoc = Spawn->GetActorLocation();
 		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
-			APawn* Pawn = It->Get();
+			APawn* Pawn = *It;
 			if (!Pawn || !Pawn->GetPlayerState()) continue;
 			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
@@ -2011,7 +2011,7 @@ AActor* AElimPlusGame::ChoosePlayerStart_Implementation(AController* Player)
 		TArray<FVector> TeammateLocs;
 		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
-			APawn* Pawn = It->Get();
+			APawn* Pawn = *It;
 			if (!Pawn || !Pawn->GetPlayerState()) continue;
 			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
@@ -2663,7 +2663,7 @@ bool AElimPlusGame::GetAliveCounts(int32& OutAliveTeam0, int32& OutAliveTeam1) c
 			Spectators++;
 			continue;
 		}
-		if (PS->bIsInactive)
+		if (PS->IsInactive())
 		{
 			Inactive++;
 			continue;
@@ -2829,7 +2829,7 @@ void AElimPlusGame::BroadcastRoundResults(int32 WinnerTeamIndex, bool bIsDraw)
 			for (AController* C : WinnerMembers)
 			{
 				AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-				if (PS && !PS->bOnlySpectator)
+				if (PS && !PS->IsOnlyASpectator())
 				{
 					TotalWinningTeamSize++;
 
@@ -2878,7 +2878,7 @@ void AElimPlusGame::CheckForDarkHorse(int32 WinnerTeamIndex)
 				if (!C) continue;
 
 				AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-				if (!PS || PS->bOnlySpectator) continue;
+				if (!PS || PS->IsOnlyASpectator()) continue;
 
 				AUTCharacter* Character = PS->GetUTCharacter();
 				if (Character && !Character->IsDead() && PS->RoundKills >= 3)
@@ -2911,7 +2911,7 @@ void AElimPlusGame::CheckForACE(int32 WinnerTeamIndex)
 		for (AController* C : EnemyMembers)
 		{
 			AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-			if (PS && !PS->bOnlySpectator)
+			if (PS && !PS->IsOnlyASpectator())
 			{
 				EnemyTeamSize++;
 			}
@@ -3049,9 +3049,9 @@ void AElimPlusGame::ScoreDamage_Implementation(int32 DamageAmount, AUTPlayerStat
 bool AElimPlusGame::ModifyDamage_Implementation(int32& Damage, FVector& Momentum, APawn* Injured, AController* InstigatedBy, const FHitResult& HitInfo, AActor* DamageCauser, TSubclassOf<UDamageType> DamageType)
 {
 	// Check for invulnerability during intermission
-	if (GetMatchState() == FName(TEXT("RoundCooldown")) && Injured && Injured->PlayerState)
+	if (GetMatchState() == FName(TEXT("RoundCooldown")) && Injured && Injured->GetPlayerState())
 	{
-		AUTPlayerState* InjuredPS = Cast<AUTPlayerState>(Injured->PlayerState);
+		AUTPlayerState* InjuredPS = Cast<AUTPlayerState>(Injured->GetPlayerState());
 		if (InjuredPS && InjuredPS->Team && InjuredPS->Team->TeamIndex == LastRoundWinningTeamIndex)
 		{
 			Damage = 0;
@@ -3069,7 +3069,7 @@ int32 AElimPlusGame::GetTiebreakWinnerByTeamHealth() const
 	{
 		AUTCharacter* C = *It;
 		if (!C || C->IsDead()) continue;
-		if (AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState))
+		if (AUTPlayerState* PS = Cast<AUTPlayerState>(C->GetPlayerState()))
 		{
 			if (PS->Team)
 			{
@@ -3196,7 +3196,7 @@ void AElimPlusGame::ExecuteOvertimeWave()
 		CurrentWaveDamage = FMath::Min(CurrentWaveDamage, OvertimeMaxDamage);
 	}
 	UE_LOG(LogGameMode, Verbose, TEXT("Overtime Wave %d: %.1f damage to %d players"),
-		CurrentOvertimeWave, CurrentWaveDamage, GetWorld()->GetNumPawns());
+		CurrentOvertimeWave, CurrentWaveDamage, [&]{int32 N=0;for(TActorIterator<APawn> P(GetWorld());P;++P)++N;return N;}());
 	BP_OnOvertimeWave(CurrentWaveDamage, CurrentOvertimeWave);
 	int32 DamageCount = 0;
 	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
@@ -3224,7 +3224,7 @@ void AElimPlusGame::ExecuteOvertimeWave()
 		Hit.ImpactPoint = C->GetActorLocation();
 		Hit.Normal = FVector(0, 0, 1);
 		Hit.ImpactNormal = FVector(0, 0, 1);
-		Hit.Actor = C;
+		Hit.GetActor() = C;
 		Hit.Component = Cast<UPrimitiveComponent>(C->GetRootComponent());
 		FUTPointDamageEvent DamageEvent(
 			DamageToApply,
@@ -3410,7 +3410,7 @@ void AElimPlusGame::Logout(AController* Exiting)
 			AUTPlayerState* ExitingPS = Cast<AUTPlayerState>(Exiting->PlayerState);
 
 			// Only pause for actual human players (ignore bots and spectators)
-			if (ExitingPS && !ExitingPS->bIsABot && !ExitingPS->bOnlySpectator)
+			if (ExitingPS && !ExitingPS->IsABot() && !ExitingPS->IsOnlyASpectator())
 			{
 				UE_LOG(LogGameMode, Warning, TEXT("Competitive Auto-Pause: Player %s disconnected. Pausing match."), *ExitingPS->GetPlayerName());
 
@@ -3480,7 +3480,7 @@ void AElimPlusGame::CheckForCampers()
 		if (!PC) continue;
 
 		AUTPlayerState* PS = Cast<AUTPlayerState>(PC->PlayerState);
-		if (!PS || PS->bOnlySpectator || PS->bOutOfLives) continue;
+		if (!PS || PS->IsOnlyASpectator() || PS->bOutOfLives) continue;
 
 		APawn* Pawn = PC->GetPawn();
 		if (!Pawn || !IsValid(Pawn)) continue;
@@ -3590,9 +3590,9 @@ uint8 AElimPlusGame::PickBalancedTeam(AUTPlayerState* PS, uint8 RequestedTeam)
 				TeamStrength += 1400;
 				continue;
 			}
-			if (MemberPS->UniqueId.IsValid())
+			if (MemberPS->GetUniqueId().IsValid())
 			{
-				TeamStrength += RatingSystem->GetCachedElo(MemberPS->UniqueId.ToString());
+				TeamStrength += RatingSystem->GetCachedElo(MemberPS->GetUniqueId().ToString());
 			}
 			else
 			{
@@ -3656,7 +3656,7 @@ void AElimPlusGame::RebalanceTeamsForMatchStart()
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-		if (!UTPS || UTPS->bOnlySpectator) continue;
+		if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 
 		AController* C = Cast<AController>(UTPS->GetOwner());
 		if (!C) continue;

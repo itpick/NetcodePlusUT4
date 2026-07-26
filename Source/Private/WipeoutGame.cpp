@@ -1,4 +1,5 @@
 #include "WipeoutGame.h"
+#include "EngineUtils.h"
 #include "NCPlusVersionGate.h"
 #include "NCFireValCollector.h"
 #include "UnrealTournament.h"
@@ -26,7 +27,6 @@
 #include "TimerManager.h"
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerStart.h"
-#include "EngineUtils.h"
 #include "UTCountDownMessage.h"
 #include "UTGameMessage.h"
 #include "WipeoutHUD.h"
@@ -1827,7 +1827,7 @@ AActor* AUWipeoutGame::ChooseMidRoundSpawn(AController* Player)
 	TArray<FVector> EnemyPositions;
 	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
-		APawn* Pawn = It->Get();
+		APawn* Pawn = *It;
 		if (!Pawn) continue;
 
 		AUTCharacter* UTC = Cast<AUTCharacter>(Pawn);
@@ -1932,7 +1932,7 @@ AActor* AUWipeoutGame::ChoosePlayerStart_Implementation(AController* Player)
 		const FVector SpawnLoc = Spawn->GetActorLocation();
 		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
-			APawn* Pawn = It->Get();
+			APawn* Pawn = *It;
 			if (!Pawn || !Pawn->GetPlayerState()) continue;
 			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
@@ -2009,7 +2009,7 @@ AActor* AUWipeoutGame::ChoosePlayerStart_Implementation(AController* Player)
 		TArray<FVector> TeammateLocs;
 		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
-			APawn* Pawn = It->Get();
+			APawn* Pawn = *It;
 			if (!Pawn || !Pawn->GetPlayerState()) continue;
 			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
@@ -2458,7 +2458,7 @@ void AUWipeoutGame::CleanupWorldForNewRound()
 
 	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
-		if (AUTCharacter* UTC = Cast<AUTCharacter>(It->Get()))
+		if (AUTCharacter* UTC = Cast<AUTCharacter>(*It))
 		{
 			if (UTC->IsDead() && IsValid(UTC))
 			{
@@ -2509,7 +2509,7 @@ bool AUWipeoutGame::GetTeamMemberCounts(int32& OutTeam0, int32& OutTeam1) const
 	for (APlayerState* PSBase : GS->PlayerArray)
 	{
 		AUTPlayerState* PS = Cast<AUTPlayerState>(PSBase);
-		if (!PS || PS->bOnlySpectator || PS->bIsInactive || !PS->Team) continue;
+		if (!PS || PS->IsOnlyASpectator() || PS->IsInactive() || !PS->Team) continue;
 
 		if (PS->Team->TeamIndex == 0) OutTeam0++;
 		else if (PS->Team->TeamIndex == 1) OutTeam1++;
@@ -2529,7 +2529,7 @@ int32 AUWipeoutGame::CountAliveOnTeam(int32 TeamIndex) const
 		{
 			if (!C) continue;
 			AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-			if (!PS || PS->bOnlySpectator) continue;
+			if (!PS || PS->IsOnlyASpectator()) continue;
 			const APawn* P = C->GetPawn();
 			const AUTCharacter* UTC = Cast<AUTCharacter>(P);
 			if (P && (!UTC || !UTC->IsDead())) ++Alive;
@@ -2546,7 +2546,7 @@ int32 AUWipeoutGame::GetTiebreakWinnerByTeamHealth() const
 	{
 		AUTCharacter* C = *It;
 		if (!C || C->IsDead()) continue;
-		if (AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState))
+		if (AUTPlayerState* PS = Cast<AUTPlayerState>(C->GetPlayerState()))
 		{
 			if (PS->Team)
 			{
@@ -2620,7 +2620,7 @@ AUTPlayerState* AUWipeoutGame::FindAliveTeammate(AUTPlayerState* PS) const
 	{
 		if (!C) continue;
 		AUTPlayerState* OtherPS = Cast<AUTPlayerState>(C->PlayerState);
-		if (!OtherPS || OtherPS == PS || OtherPS->bOnlySpectator) continue;
+		if (!OtherPS || OtherPS == PS || OtherPS->IsOnlyASpectator()) continue;
 		APawn* P = C->GetPawn();
 		AUTCharacter* UTC = Cast<AUTCharacter>(P);
 		if (P && (!UTC || !UTC->IsDead())) return OtherPS;
@@ -2642,7 +2642,7 @@ AUTPlayerState* AUWipeoutGame::FindAliveEnemy(AUTPlayerState* PS) const
 		{
 			if (!C) continue;
 			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(C->PlayerState);
-			if (!OtherPS || OtherPS->bOnlySpectator) continue;
+			if (!OtherPS || OtherPS->IsOnlyASpectator()) continue;
 			APawn* P = C->GetPawn();
 			AUTCharacter* UTC = Cast<AUTCharacter>(P);
 			if (P && (!UTC || !UTC->IsDead())) return OtherPS;
@@ -2660,7 +2660,7 @@ AUTPlayerState* AUWipeoutGame::FindAliveOnTeamPS(int32 TeamIndex) const
 	{
 		if (!C) continue;
 		AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-		if (!PS || PS->bOnlySpectator) continue;
+		if (!PS || PS->IsOnlyASpectator()) continue;
 		APawn* P = C->GetPawn();
 		const AUTCharacter* UTC = Cast<AUTCharacter>(P);
 		if (P && (!UTC || !UTC->IsDead())) return PS;
@@ -2740,7 +2740,7 @@ bool AUWipeoutGame::CanSpectate_Implementation(APlayerController* Viewer, APlaye
 		// the winners and Mouse1 (ServerViewNextPlayer) should cycle through them.
 		// Deferring to Super rejected the cycle because RoundCooldown isn't "match
 		// in progress" — so explicitly allow spectating any alive non-spectator.
-		if (!TargetPS->bOnlySpectator)
+		if (!TargetPS->IsOnlyASpectator())
 		{
 			const AController* TPC = Cast<AController>(TargetPS->GetOwner());
 			const APawn* TP = TPC ? TPC->GetPawn() : nullptr;
@@ -3190,7 +3190,7 @@ void AUWipeoutGame::ExecuteOvertimeWave()
 		Hit.ImpactPoint = C->GetActorLocation();
 		Hit.Normal = FVector(0, 0, 1);
 		Hit.ImpactNormal = FVector(0, 0, 1);
-		Hit.Actor = C;
+		Hit.GetActor() = C;
 		Hit.Component = Cast<UPrimitiveComponent>(C->GetRootComponent());
 
 		FUTPointDamageEvent DamageEvent(
@@ -3387,10 +3387,10 @@ void AUWipeoutGame::HandleServerManagement()
 
 	if (UTIsHandlingReplays())
 	{
-		UDemoNetDriver* DemoNetDriver = GetWorld()->DemoNetDriver;
-		if (DemoNetDriver != nullptr && DemoNetDriver->ReplayStreamer.IsValid())
+		UDemoNetDriver* DemoNetDriver = GetWorld()->GetDemoNetDriver();
+		if (DemoNetDriver != nullptr && DemoNetDriver->GetReplayStreamer().IsValid())
 		{
-			UTGameState->ReplayID = DemoNetDriver->ReplayStreamer->GetReplayID();
+			UTGameState->ReplayID = DemoNetDriver->GetReplayStreamer()->GetReplayID();
 		}
 	}
 }
@@ -3475,7 +3475,7 @@ void AUWipeoutGame::HandleInstanceCleanup()
 		}
 	}
 
-	if (LobbyBeacon && LobbyBeacon->GetNetConnection()->State == EConnectionState::USOCK_Closed)
+	if (LobbyBeacon && LobbyBeacon->GetNetConnection()->GetConnectionState() == EConnectionState::USOCK_Closed)
 	{
 		if (!bDedicatedInstance && NumPlayers <= 0 && MatchState != MatchState::WaitingToStart)
 		{
@@ -3498,7 +3498,7 @@ void AUWipeoutGame::Logout(AController* Exiting)
 		if (Exiting)
 		{
 			AUTPlayerState* ExitingPS = Cast<AUTPlayerState>(Exiting->PlayerState);
-			if (ExitingPS && !ExitingPS->bIsABot && !ExitingPS->bOnlySpectator)
+			if (ExitingPS && !ExitingPS->IsABot() && !ExitingPS->bOnlySpectator)
 			{
 				UE_LOG(LogGameMode, Warning, TEXT("Wipeout: Player %s disconnected. Pausing match."), *ExitingPS->GetPlayerName());
 				SetPause(nullptr);

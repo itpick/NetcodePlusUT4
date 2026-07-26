@@ -1,5 +1,6 @@
 
 #include "UTWeaponFix.h"
+#include "EngineUtils.h"
 #include "UTGameState.h"
 #include "UTPlayerController.h"
 #include "UTCharacter.h"
@@ -18,7 +19,6 @@
 #include "UTWeaponSkin.h"
 #include "UObject/UObjectIterator.h"
 #include "ClientHitsounds.h"
-#include "EngineUtils.h"
 #include "UTGameMode.h"
 #include "UTCTFBaseGame.h"
 #include "UTPlayerState.h"
@@ -2433,7 +2433,7 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
         float TimeSinceLast = CurrentTime - LastFlakShellSpawnTime;
         if (TimeSinceLast < 0.2f)
         {
-            if (FireDbg()) UE_LOG(LogUTWeaponFix, Warning, TEXT("FlakShell anti-dup guard BLOCKED spawn. TimeSinceLast=%.4f Role=%d"), TimeSinceLast, (int32)Role);
+            if (FireDbg()) UE_LOG(LogUTWeaponFix, Warning, TEXT("FlakShell anti-dup guard BLOCKED spawn. TimeSinceLast=%.4f Role=%d"), TimeSinceLast, (int32)GetLocalRole());
             return nullptr;
         }
         LastFlakShellSpawnTime = CurrentTime;
@@ -2454,9 +2454,9 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
 	// 1) Get Current Ping
 	// ----------------------------------------
 	float CurrentPing = 0.0f;
-	if (UTOwner && UTOwner->PlayerState)
+	if (UTOwner && UTOwner->GetPlayerState())
 	{
-		CurrentPing = UTOwner->PlayerState->ExactPing;
+		CurrentPing = UTOwner->GetPlayerState()->ExactPing;
 	}
 
 	// ----------------------------------------
@@ -2474,7 +2474,7 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
 	// ----------------------------------------
 	// 3) Client: Check if we should delay spawn for extreme ping
 	// ----------------------------------------
-	if ((Role != ROLE_Authority) && OwningPlayer)
+	if ((GetLocalRole() != ROLE_Authority) && OwningPlayer)
 	{
 		float ExcessPing = CurrentPing - FudgeFactorMs - ProjectilePredictionCapMs;
 
@@ -2550,7 +2550,7 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
     // Set after spawn — takes effect starting next frame.
     if (NewProjectile->ProjectileMovement)
     {
-        if (Role == ROLE_Authority)
+        if (GetLocalRole() == ROLE_Authority)
         {
             const float ServerRate = 1.f / 240.f;
             NewProjectile->PrimaryActorTick.TickInterval = ServerRate;
@@ -2596,11 +2596,11 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
 		{
 		case EWeaponHand::HAND_Center:
 			NewProjectile->InitialVisualOffset = NewProjectile->InitialVisualOffset + LowMeshOffset;
-			NewProjectile->OffsetVisualComponent->RelativeLocation = NewProjectile->InitialVisualOffset;
+			NewProjectile->OffsetVisualComponent->SetRelativeLocation(NewProjectile->InitialVisualOffset);
 			break;
 		case EWeaponHand::HAND_Hidden:
 			NewProjectile->InitialVisualOffset = NewProjectile->InitialVisualOffset + VeryLowMeshOffset;
-			NewProjectile->OffsetVisualComponent->RelativeLocation = NewProjectile->InitialVisualOffset;
+			NewProjectile->OffsetVisualComponent->SetRelativeLocation(NewProjectile->InitialVisualOffset);
 			break;
 		default:
 			break;
@@ -2617,7 +2617,7 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
 	// ----------------------------------------
 	// 6) SERVER: Fast-forward authoritative projectile
 	// ----------------------------------------
-	if (Role == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority)
 	{
 		NewProjectile->HitsStatsName = HitsStatsName;
 
@@ -2944,10 +2944,10 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
     // --------------------------------------------------------------------------
 // START DEBUG LOGGING
 // --------------------------------------------------------------------------
-    if (Role == ROLE_Authority)
+    if (GetLocalRole() == ROLE_Authority)
     {
         // Case 1: Client claimed a hit, but Server disagrees
-        if (ReceivedHitScanHitChar != nullptr && Hit.Actor != ReceivedHitScanHitChar)
+        if (ReceivedHitScanHitChar != nullptr && Hit.GetActor() != ReceivedHitScanHitChar)
         {
             // Calculate how close the shot actually came on the Server
             float ClosestDist = 9999.f;
@@ -2981,7 +2981,7 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 
         // Case 2: Ghost Miss (Both missed, but maybe it was close?)
         // Useful for checking if your Rewind Math is aligning the hitbox correctly
-        else if (ReceivedHitScanHitChar == nullptr && Hit.Actor == nullptr)
+        else if (ReceivedHitScanHitChar == nullptr && Hit.GetActor() == nullptr)
         {
             // Scan for nearest player to see how close we were
             float BestDist = 9999.f;
@@ -3010,7 +3010,7 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 
 
     // 3. Check for headshot (using the SAME SpawnLocation and FireDir)
-    if (UTPC && bCheckHeadSphere && (Cast<AUTCharacter>(Hit.Actor.Get()) == nullptr) &&
+    if (UTPC && bCheckHeadSphere && (Cast<AUTCharacter>(Hit.GetActor()) == nullptr) &&
         ((Spread.Num() <= GetCurrentFireMode()) || (Spread[GetCurrentFireMode()] == 0.f)) &&
         (UTOwner->GetVelocity().IsNearlyZero() || bCheckMovingHeadSphere))
     {
@@ -3027,7 +3027,7 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
     }
 
     // 4. Server-side processing
-    if (Role == ROLE_Authority)
+    if (GetLocalRole() == ROLE_Authority)
     {
         if (PS && (ShotsStatsName != NAME_None))
         {
@@ -3039,7 +3039,7 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
         // Bot warnings
         if (UTPC != nullptr)
         {
-            APawn* PawnTarget = Cast<APawn>(Hit.Actor.Get());
+            APawn* PawnTarget = Cast<APawn>(Hit.GetActor());
             if (PawnTarget != nullptr)
             {
                 // DON'T cache this! That's what causes the ghost hits
@@ -3059,7 +3059,7 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
             AUTBot* B = Cast<AUTBot>(UTOwner->Controller);
             if (B != nullptr)
             {
-                APawn* PawnTarget = Cast<APawn>(Hit.Actor.Get());
+                APawn* PawnTarget = Cast<APawn>(Hit.GetActor());
                 if (PawnTarget == nullptr)
                 {
                     PawnTarget = Cast<APawn>(B->GetTarget());
@@ -3091,9 +3091,9 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
         }
     }
     // 5. Deal damage
-    if (Hit.Actor != nullptr && Hit.Actor->bCanBeDamaged && bDealDamage)
+    if (Hit.GetActor() != nullptr && Hit.GetActor()->bCanBeDamaged && bDealDamage)
     {
-        if ((Role == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
+        if ((GetLocalRole() == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
         {
             PS->ModifyStatsValue(HitsStatsName, 1);
         }

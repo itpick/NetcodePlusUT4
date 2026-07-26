@@ -1,6 +1,6 @@
 // UTWeap_Enforcer_Plus.cpp
-#include "EngineUtils.h"
 #include "UTWeap_Enforcer_Plus.h"
+#include "EngineUtils.h"
 #include "UnrealTournament.h"
 #include "UTCharacter.h"
 #include "UTCharacterMovement.h"

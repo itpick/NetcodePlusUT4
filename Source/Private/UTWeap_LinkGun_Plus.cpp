@@ -1,4 +1,5 @@
 #include "UTWeap_LinkGun_Plus.h"
+#include "Engine/OverlapResult.h"
 #include "UnrealTournament.h"
 #include "UTWeaponStateFiringLinkBeamPlus.h"
 #include "UTPlayerController.h"
@@ -906,9 +907,9 @@ void AUTWeap_LinkGun_Plus::FiringExtraUpdated_Implementation(uint8 NewFlashExtra
 				GetWorld()->OverlapMultiByChannel(Hits, UTOwner->FlashLocation.Position, FQuat::Identity, COLLISION_TRACE_WEAPON, FCollisionShape::MakeSphere(10.0f), FCollisionQueryParams(NAME_None, true, UTOwner));
 				for (const FOverlapResult& Hit : Hits)
 				{
-					if (Cast<APawn>(Hit.Actor.Get()) != NULL)
+					if (Cast<APawn>(Hit.GetActor()) != NULL)
 					{
-						GuessTarget = Hit.Actor.Get();
+						GuessTarget = Hit.GetActor();
 					}
 				}
 			}
