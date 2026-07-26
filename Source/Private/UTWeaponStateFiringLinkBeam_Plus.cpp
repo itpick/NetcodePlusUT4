@@ -310,13 +310,13 @@ void UUTWeaponStateFiringLinkBeamPlus::Tick(float DeltaTime)
         AActor* OldLinked = LinkGun->CurrentLinkedTarget;
         LinkGun->CurrentLinkedTarget = nullptr;
 
-        if (Hit.GetActor() != nullptr && Hit.GetActor()->bCanBeDamaged && LinkGun->IsValidLinkTarget(Hit.GetActor()))
+        if (Hit.GetActor() != nullptr && Hit.GetActor()->CanBeDamaged() && LinkGun->IsValidLinkTarget(Hit.GetActor()))
         {
             LinkGun->CurrentLinkedTarget = Hit.GetActor();
         }
 
         // For other clients� audio/HUD we still want to know if beam is hitting something
-        LinkGun->bLinkCausingDamage = Hit.GetActor() != nullptr && Hit.GetActor()->bCanBeDamaged;
+        LinkGun->bLinkCausingDamage = Hit.GetActor() != nullptr && Hit.GetActor()->CanBeDamaged();
 
         // OPTIONAL: you can mirror the warmup timer here if you ever
         // need server-auth decisions about pull readiness for spectators.
@@ -361,7 +361,7 @@ void UUTWeaponStateFiringLinkBeamPlus::Tick(float DeltaTime)
         AActor* OldLinkedTarget = LinkGun->CurrentLinkedTarget;
         LinkGun->CurrentLinkedTarget = nullptr;
 
-        if (Hit.GetActor() != nullptr && Hit.GetActor()->bCanBeDamaged)
+        if (Hit.GetActor() != nullptr && Hit.GetActor()->CanBeDamaged())
         {
             // Check if valid link target (for pull + reward)
             if (LinkGun->IsValidLinkTarget(Hit.GetActor()))

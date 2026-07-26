@@ -1,3 +1,4 @@
+#include "EngineUtils.h"
 #include "UTWeaponStateZoomingFix.h"
 #include "UTWeaponFix.h" 
 #include "UTHUDWidget.h"
@@ -25,7 +26,7 @@ bool UUTWeaponStateZoomingFix::DrawHUD(UUTHUDWidget* WeaponHudWidget)
         {
             OverlayMI = UMaterialInstanceDynamic::Create(OverlayMat, this);
         }
-        FCanvasTileItem Item(FVector2D(0.0f, 0.0f), OverlayMI->GetRenderProxy(false), FVector2D(C->ClipX, C->ClipY));
+        FCanvasTileItem Item(FVector2D(0.0f, 0.0f), OverlayMI->GetRenderProxy(), FVector2D(C->ClipX, C->ClipY));
         float OrigSizeX = Item.Size.X;
         Item.Size.X = FMath::Max<float>(Item.Size.X, Item.Size.Y * 16.0f / 9.0f);
         Item.Position.X -= (Item.Size.X - OrigSizeX) * 0.5f;
@@ -43,7 +44,7 @@ bool UUTWeaponStateZoomingFix::DrawHUD(UUTHUDWidget* WeaponHudWidget)
                 float WorldTime = GetWorld()->TimeSeconds;
                 FVector FireStart = GetOuterAUTWeapon()->GetFireStartLoc();
 
-                for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+                for (TActorIterator<APawn> It(GetWorld()); It; ++It)
                 {
                     AUTCharacter* EnemyChar = Cast<AUTCharacter>(*It);
 

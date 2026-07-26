@@ -1,4 +1,5 @@
 // UTWeap_Enforcer_Plus.cpp
+#include "EngineUtils.h"
 #include "UTWeap_Enforcer_Plus.h"
 #include "UnrealTournament.h"
 #include "UTCharacter.h"
@@ -90,7 +91,7 @@ void AUTWeap_Enforcer_Plus::HitScanTrace(const FVector& StartLocation, const FVe
 	FVector BestCapsulePoint(0.f);
 	float BestCollisionRadius = 0.f;
 
-	for (FConstPawnIterator Iterator = GetWorld()->GetPawnIterator(); Iterator; ++Iterator)
+	for (TActorIterator<APawn> Iterator(GetWorld()); Iterator; ++Iterator)
 	{
 		AUTCharacter* Target = Cast<AUTCharacter>(*Iterator);
 		if (!Target || Target == UTOwner)
@@ -170,7 +171,7 @@ void AUTWeap_Enforcer_Plus::HitScanTrace(const FVector& StartLocation, const FVe
 		Hit.Location = BestPoint + BackDist * (StartLocation - EndTrace).GetSafeNormal();
 		Hit.Normal = (Hit.Location - BestCapsulePoint).GetSafeNormal();
 		Hit.ImpactNormal = Hit.Normal;
-		Hit.GetActor() = BestTarget;
+		Hit.HitObjectHandle = FActorInstanceHandle(BestTarget);
 		Hit.bBlockingHit = true;
 		Hit.Component = BestTarget->GetCapsuleComponent();
 		Hit.ImpactPoint = BestPoint;

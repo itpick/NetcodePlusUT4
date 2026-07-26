@@ -1825,7 +1825,7 @@ AActor* AUWipeoutGame::ChooseMidRoundSpawn(AController* Player)
 
 	// Gather all living enemy positions
 	TArray<FVector> EnemyPositions;
-	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
 		APawn* Pawn = It->Get();
 		if (!Pawn) continue;
@@ -1833,7 +1833,7 @@ AActor* AUWipeoutGame::ChooseMidRoundSpawn(AController* Player)
 		AUTCharacter* UTC = Cast<AUTCharacter>(Pawn);
 		if (UTC && UTC->IsDead()) continue;
 
-		AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->PlayerState);
+		AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 		if (OtherPS && OtherPS->Team && OtherPS->Team->TeamIndex != MyTeam)
 		{
 			EnemyPositions.Add(Pawn->GetActorLocation());
@@ -1930,11 +1930,11 @@ AActor* AUWipeoutGame::ChoosePlayerStart_Implementation(AController* Player)
 		if (!Spawn) return;
 
 		const FVector SpawnLoc = Spawn->GetActorLocation();
-		for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
 			APawn* Pawn = It->Get();
-			if (!Pawn || !Pawn->PlayerState) continue;
-			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->PlayerState);
+			if (!Pawn || !Pawn->GetPlayerState()) continue;
+			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
 
 			const float Dist = (Pawn->GetActorLocation() - SpawnLoc).Size2D();
@@ -2007,11 +2007,11 @@ AActor* AUWipeoutGame::ChoosePlayerStart_Implementation(AController* Player)
 	{
 		// Gather living teammates
 		TArray<FVector> TeammateLocs;
-		for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
 			APawn* Pawn = It->Get();
-			if (!Pawn || !Pawn->PlayerState) continue;
-			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->PlayerState);
+			if (!Pawn || !Pawn->GetPlayerState()) continue;
+			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
 			if (OtherPS->Team->TeamIndex == TeamIndex)
 			{
@@ -2083,7 +2083,7 @@ APawn* AUWipeoutGame::SpawnDefaultPawnFor_Implementation(AController* NewPlayer,
 	FVector StartLocation = StartSpot->GetActorLocation();
 
 	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.Instigator = Instigator;
+	SpawnInfo.Instigator = GetInstigator();
 	SpawnInfo.ObjectFlags |= RF_Transient;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
@@ -2187,9 +2187,9 @@ bool AUWipeoutGame::ModifyDamage_Implementation(int32& Damage, FVector& Momentum
 	AController* InstigatedBy, const FHitResult& HitInfo, AActor* DamageCauser, TSubclassOf<UDamageType> DamageType)
 {
 	// Intermission invulnerability for winners
-	if (GetMatchState() == FName(TEXT("RoundCooldown")) && Injured && Injured->PlayerState)
+	if (GetMatchState() == FName(TEXT("RoundCooldown")) && Injured && Injured->GetPlayerState())
 	{
-		AUTPlayerState* InjuredPS = Cast<AUTPlayerState>(Injured->PlayerState);
+		AUTPlayerState* InjuredPS = Cast<AUTPlayerState>(Injured->GetPlayerState());
 		if (InjuredPS && InjuredPS->Team && InjuredPS->Team->TeamIndex == LastRoundWinningTeamIndex)
 		{
 			Damage = 0;
@@ -2198,9 +2198,9 @@ bool AUWipeoutGame::ModifyDamage_Implementation(int32& Damage, FVector& Momentum
 	}
 
 	// Mid-round spawn protection
-	if (bRoundInProgress && Injured && Injured->PlayerState && RespawnProtectionTime > 0.f)
+	if (bRoundInProgress && Injured && Injured->GetPlayerState() && RespawnProtectionTime > 0.f)
 	{
-		AUTPlayerState* InjuredPS = Cast<AUTPlayerState>(Injured->PlayerState);
+		AUTPlayerState* InjuredPS = Cast<AUTPlayerState>(Injured->GetPlayerState());
 		if (InjuredPS)
 		{
 			float* ProtectedUntil = SpawnProtectedUntil.Find(InjuredPS);
@@ -2208,7 +2208,7 @@ bool AUWipeoutGame::ModifyDamage_Implementation(int32& Damage, FVector& Momentum
 			{
 				// Player is still under spawn protection
 				// Allow self-damage to break protection (prevents abuse)
-				if (InstigatedBy && InstigatedBy->PlayerState == Injured->PlayerState)
+				if (InstigatedBy && InstigatedBy->PlayerState == Injured->GetPlayerState())
 				{
 					SpawnProtectedUntil.Remove(InjuredPS);
 				}
@@ -2239,7 +2239,7 @@ bool AUWipeoutGame::ModifyDamage_Implementation(int32& Damage, FVector& Momentum
 		if (DTName.Contains(TEXT("Link_Alt")) || DTName.Contains(TEXT("LinkBeam")))
 		{
 			AUTCharacter* InjuredChar = Cast<AUTCharacter>(Injured);
-			AUTPlayerState* InjuredPS = InjuredChar ? Cast<AUTPlayerState>(InjuredChar->PlayerState) : nullptr;
+			AUTPlayerState* InjuredPS = InjuredChar ? Cast<AUTPlayerState>(InjuredChar->GetPlayerState()) : nullptr;
 			AUTPlayerState* InstigatorPS = InstigatedBy ? Cast<AUTPlayerState>(InstigatedBy->PlayerState) : nullptr;
 
 			if (InjuredPS && InstigatorPS && InjuredPS != InstigatorPS
@@ -2456,7 +2456,7 @@ void AUWipeoutGame::CleanupWorldForNewRound()
 		}
 	}
 
-	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
 		if (AUTCharacter* UTC = Cast<AUTCharacter>(It->Get()))
 		{
@@ -2484,7 +2484,7 @@ bool AUWipeoutGame::GetAliveCounts(int32& OutAliveTeam0, int32& OutAliveTeam1) c
 	for (APlayerState* PSBase : GS->PlayerArray)
 	{
 		AUTPlayerState* PS = Cast<AUTPlayerState>(PSBase);
-		if (!PS || PS->bOnlySpectator || PS->bIsInactive || !PS->Team) continue;
+		if (!PS || PS->IsOnlyASpectator() || PS->IsInactive() || !PS->Team) continue;
 
 		AUTCharacter* Pawn = Cast<AUTCharacter>(PS->GetUTCharacter());
 		if (!Pawn || Pawn->IsDead() || Pawn->Health <= 0) continue;
@@ -3169,7 +3169,7 @@ void AUWipeoutGame::ExecuteOvertimeWave()
 
 	BP_OnOvertimeWave(CurrentWaveDamage, CurrentOvertimeWave);
 
-	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
 		if (!bRoundInProgress) break;
 

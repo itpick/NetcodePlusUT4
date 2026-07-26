@@ -21,6 +21,7 @@ public class NetcodePlus : ModuleRules
 		bUseUnity = false;
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		UnsafeTypeCastWarningLevel = WarningLevel.Off;
+		ShadowVariableWarningLevel = WarningLevel.Off;
 		bEnableUndefinedIdentifierWarnings = false;
 		bLegacyPublicIncludePaths = true;
 

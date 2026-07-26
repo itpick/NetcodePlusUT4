@@ -493,7 +493,7 @@ void ANCPlusCTFGameMode::EndAutoPause(const TCHAR* Reason)
 {
 	if (AWorldSettings* WS = GetWorldSettings())
 	{
-		WS->Pauser = nullptr;
+		WS->SetPauserPlayerState(nullptr);
 	}
 	bAutoPaused = false;
 	AutoPauseAwaitIds.Reset();
@@ -502,7 +502,7 @@ void ANCPlusCTFGameMode::EndAutoPause(const TCHAR* Reason)
 
 void ANCPlusCTFGameMode::CapturePlayerStats(AUTPlayerState* UTPS, FNCPlusCTFPlayerInput& Out) const
 {
-	Out.UniqueId   = UTPS->UniqueId.ToString();
+	Out.UniqueId   = UTPS->GetUniqueId().ToString();
 	Out.PlayerName = UTPS->GetPlayerName();
 	Out.TeamIndex  = UTPS->GetTeamNum();
 	Out.Kills      = UTPS->Kills;
@@ -568,7 +568,7 @@ void ANCPlusCTFGameMode::SampleRoleDwell()
 		AController* C = It->Get();
 		APawn* Pawn = C ? C->GetPawn() : nullptr;
 		AUTPlayerState* PS = C ? Cast<AUTPlayerState>(C->PlayerState) : nullptr;
-		if (Pawn && PS && !PS->bOnlySpectator)
+		if (Pawn && PS && !PS->IsOnlyASpectator())
 		{
 			CreditRoleDwell(PS, Pawn->GetActorLocation(), 1.f);   // one second of presence
 		}
@@ -581,7 +581,7 @@ void ANCPlusCTFGameMode::CreditRoleDwell(AUTPlayerState* PS, const FVector& Loc,
 	// the own(<0.4) / mid / enemy(>=0.6) bucket. Cover/fallback refine the mid
 	// LABEL only (not OffLean): enemy-half while we hold their flag vs own-half
 	// while our flag is out. Keyed by UniqueId to match CapturePlayerStats.
-	if (!PS || !PS->UniqueId.IsValid() || Weight <= 0.f)
+	if (!PS || !PS->GetUniqueId().IsValid() || Weight <= 0.f)
 	{
 		return;
 	}
@@ -610,7 +610,7 @@ void ANCPlusCTFGameMode::CreditRoleDwell(AUTPlayerState* PS, const FVector& Loc,
 	}
 	const float t = dOwn / Denom;   // 0 = at own base, 1 = at enemy base
 
-	FNCPlusCTFRoleDwell& D = RoleDwell.FindOrAdd(PS->UniqueId.ToString());
+	FNCPlusCTFRoleDwell& D = RoleDwell.FindOrAdd(PS->GetUniqueId().ToString());
 	if (t < 0.40f)
 	{
 		D.OwnSec += Weight;
@@ -669,7 +669,7 @@ void ANCPlusCTFGameMode::LoadCTFPerfConfig()
 {
 	// Members already hold defaults; only override what Mod.ini [UTPUGS_STATS]
 	// specifies (same section + load pattern as NCEloUploader).
-	const FString ModIniPath = FPaths::GameSavedDir() / TEXT("Config") / TEXT("Mod.ini");
+	const FString ModIniPath = FPaths::ProjectSavedDir() / TEXT("Config") / TEXT("Mod.ini");
 	if (!FPaths::FileExists(ModIniPath))
 	{
 		UE_LOG(LogGameMode, Log, TEXT("NCPlusCTF perf: Mod.ini not found, using defaults"));
@@ -727,7 +727,7 @@ void ANCPlusCTFGameMode::LoadSpawnConfig()
 {
 	// Same Mod.ini load pattern as LoadCTFPerfConfig, section [UTPUGS_SPAWN].
 	// Members already hold ctor defaults; only override what the ini specifies.
-	const FString ModIniPath = FPaths::GameSavedDir() / TEXT("Config") / TEXT("Mod.ini");
+	const FString ModIniPath = FPaths::ProjectSavedDir() / TEXT("Config") / TEXT("Mod.ini");
 	if (!FPaths::FileExists(ModIniPath))
 	{
 		return;
@@ -1814,13 +1814,13 @@ void ANCPlusCTFGameMode::EndGame(AUTPlayerState* Winner, FName Reason)
 	// so we only fire once the demo is old enough for the seek to resolve, and PickMostCoolMoments
 	// features the just-scored decisive cap (newest, most-resolved frame). Short matches (1-cap
 	// tests) fall below the gate and skip the replay entirely — no crash, no replay.
-	const float DemoAge = (GetWorld()->DemoNetDriver != nullptr) ? GetWorld()->DemoNetDriver->DemoCurrentTime : 0.f;
+	const float DemoAge = (GetWorld()->GetDemoNetDriver() != nullptr) ? GetWorld()->GetDemoNetDriver()->GetDemoCurrentTime() : 0.f;
 	const float MinAge  = CVarCTFReplayMinDemoSeconds.GetValueOnGameThread();
-	if (SupportsInstantReplay() && GetWorld()->DemoNetDriver != nullptr && DemoAge >= MinAge)
+	if (SupportsInstantReplay() && GetWorld()->GetDemoNetDriver() != nullptr && DemoAge >= MinAge)
 	{
 		PickMostCoolMoments();
 	}
-	else if (GetWorld()->DemoNetDriver != nullptr)
+	else if (GetWorld()->GetDemoNetDriver() != nullptr)
 	{
 		UE_LOG(LogGameMode, Display, TEXT("NCPlusCTF: end-match replay skipped — demo %.1fs < min %.1fs (short-match killcam-seek crash guard)"), DemoAge, MinAge);
 	}
@@ -1840,7 +1840,7 @@ void ANCPlusCTFGameMode::PickMostCoolMoments(bool bClearCoolMoments, int32 CoolM
 	// end / stale cap) => skip rather than let stock PMCM seek to a possibly-early frag frame.
 	AUTPlayerState* FeaturePS = LastCapPlayer.Get();
 	const bool bRecentCap = FeaturePS != nullptr
-		&& FeaturePS->UniqueId.IsValid()
+		&& FeaturePS->GetUniqueId().IsValid()
 		&& LastCapTime > 0.f
 		&& (Now - LastCapTime) <= FeatureCapMaxAgeSeconds;
 
@@ -1855,12 +1855,12 @@ void ANCPlusCTFGameMode::PickMostCoolMoments(bool bClearCoolMoments, int32 CoolM
 	{
 		if (AUTPlayerController* PC = Cast<AUTPlayerController>(It->Get()))
 		{
-			PC->ClientQueueCoolMoment(FeaturePS->UniqueId, Rewind);
+			PC->ClientQueueCoolMoment(FeaturePS->GetUniqueId(), Rewind);
 		}
 	}
 	UE_LOG(LogGameMode, Warning, TEXT("NCPlusCTF replay: featured decisive cap by %s (rewind %.1fs, demo %.1fs)"),
 		*FeaturePS->GetPlayerName(), Rewind,
-		(GetWorld()->DemoNetDriver != nullptr) ? GetWorld()->DemoNetDriver->DemoCurrentTime : 0.f);
+		(GetWorld()->GetDemoNetDriver() != nullptr) ? GetWorld()->GetDemoNetDriver()->GetDemoCurrentTime() : 0.f);
 }
 
 // ── Match State Handlers ─────────────────────────────────────────────

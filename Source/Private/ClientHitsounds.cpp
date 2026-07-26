@@ -333,7 +333,7 @@ void AClientHitsounds::BuildHitsounds_Implementation()
 	FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	IAssetRegistry& AR = ARM.Get();
 	TArray<FAssetData> AssetList;
-	AR.GetAssetsByClass(UHitsoundPack::StaticClass()->GetFName(), AssetList, true);
+	AR.GetAssetsByClass(UHitsoundPack::StaticClass()->GetClassPathName(), AssetList, true);
 
 	for (const FAssetData& Asset : AssetList)
 	{

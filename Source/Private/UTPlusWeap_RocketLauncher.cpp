@@ -1028,7 +1028,7 @@ void AUTPlusWeap_RocketLauncher::StateChanged()
 
 bool AUTPlusWeap_RocketLauncher::CanLockTarget(AActor* Target)
 {
-    if (Target != nullptr && !Target->IsTornOff() && !IsPendingKillPending())
+    if (Target != nullptr && !Target->GetTearOff() && !IsPendingKillPending())
     {
         AUTCharacter* UTP = Cast<AUTCharacter>(Target);
         return (UTP != nullptr && (UTP->GetTeamNum() == 255 || UTP->GetTeamNum() != UTOwner->GetTeamNum()));

@@ -1514,7 +1514,7 @@ ECheckBoxState SNCPlusHUDEditor::GetWeaponSideState(FName ClassKey, FName Side) 
 	const FNCPlusHUDLayout& L = FNCPlusHUDLayout::GetLive();
 	const FName* Assigned = L.WeaponGroupAssignments.Find(ClassKey);
 	const FName Effective = Assigned ? *Assigned :
-		FNCPlusHUDLayout::GetDefaultWeaponSide(FindObject<UClass>(ANY_PACKAGE, *ClassKey.ToString()));
+		FNCPlusHUDLayout::GetDefaultWeaponSide(FindFirstObject<UClass>(*ClassKey.ToString()));
 	return (Effective == Side) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
 }
 

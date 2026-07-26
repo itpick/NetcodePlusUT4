@@ -1113,7 +1113,7 @@ void NCPlusForceModels::EnumerateContent(TArray<FContentEntry>& Out, bool bInclu
 		for (const FAssetData& A : Assets)
 		{
 			const FString Name      = A.AssetName.ToString();
-			const FString ClassPath = A.ObjectPath.ToString() + TEXT("_C");
+			const FString ClassPath = A.GetObjectPathString() + TEXT("_C");
 			bool bHidden = false;
 			for (const FString& Sub : Hidden)
 			{
@@ -1191,7 +1191,7 @@ void NCPlusForceModels::EnumerateContent(TArray<FContentEntry>& Out, bool bInclu
 	for (const FAssetData& A : Assets)
 	{
 		const FString Name      = A.AssetName.ToString();
-		const FString ClassPath = A.ObjectPath.ToString() + TEXT("_C");
+		const FString ClassPath = A.GetObjectPathString() + TEXT("_C");
 		const FString Stem      = StemOf(Name);
 		if (bAllowAny)
 		{

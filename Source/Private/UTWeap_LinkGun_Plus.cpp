@@ -743,7 +743,7 @@ void AUTWeap_LinkGun_Plus::StartLinkPull()
 
 bool AUTWeap_LinkGun_Plus::IsValidLinkTarget(AActor* InTarget)
 {
-	return (InTarget && Cast<AUTCharacter>(InTarget) && !InTarget->IsTornOff() && InTarget != GetUTOwner());
+	return (InTarget && Cast<AUTCharacter>(InTarget) && !InTarget->GetTearOff() && InTarget != GetUTOwner());
 }
 
 bool AUTWeap_LinkGun_Plus::ServerSetPulseTarget_Validate(AActor* InTarget)

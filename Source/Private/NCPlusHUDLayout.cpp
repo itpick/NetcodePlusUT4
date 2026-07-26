@@ -1807,7 +1807,7 @@ namespace NCPlusHUDDrawCall
 
 		UWorld* World = HUD->GetWorld();
 		// Replay-only: identical guard the plugin uses elsewhere (UTPlusProj_ShockBall).
-		if (World == nullptr || World->GetDemoNetDriver() == nullptr || !World->DemoNetDriver->IsPlaying()) return;
+		if (World == nullptr || World->GetDemoNetDriver() == nullptr || !World->GetDemoNetDriver()->IsPlaying()) return;
 
 		AGameStateBase* GS = World->GetGameState();
 		UFont* Font = HUD->SmallFont;
@@ -1903,7 +1903,7 @@ void FNCPlusHUDLayout::ReloadLive()
 
 	// Legacy fallback: use the pre-3.4 per-mode file if the unified one is absent.
 	// On next Save, we'll write to NewPath, effectively migrating.
-	const FString LegacyPath = FPaths::GameSavedDir() / TEXT("NetcodePlus") / TEXT("ElimPlusHUDLayout.json");
+	const FString LegacyPath = FPaths::ProjectSavedDir() / TEXT("NetcodePlus") / TEXT("ElimPlusHUDLayout.json");
 	if (FPaths::FileExists(LegacyPath))
 	{
 		GetLive() = LoadFromFile(LegacyPath);

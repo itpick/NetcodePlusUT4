@@ -25,7 +25,7 @@ AShockDomControlPoint::AShockDomControlPoint(const FObjectInitializer& OI)
 	CaptureVolume = CreateDefaultSubobject<USphereComponent>(TEXT("CaptureVolume"));
 	CaptureVolume->InitSphereRadius(CaptureRadius);
 	CaptureVolume->SetCollisionProfileName(TEXT("Trigger"));
-	CaptureVolume->bGenerateOverlapEvents = true;
+	CaptureVolume->SetGenerateOverlapEvents(true);
 	RootComponent = CaptureVolume;
 
 	// Visual marker mesh — mesh assigned by BP subclass

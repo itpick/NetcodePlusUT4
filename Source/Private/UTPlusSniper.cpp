@@ -277,7 +277,7 @@ void AUTPlusSniper::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
 	// ----------------------------------------------------------------------
 	// PART 5: DAMAGE CALCULATION (Sniper Specific Logic)
 	// ----------------------------------------------------------------------
-	if (Hit.GetActor() != NULL && Hit.GetActor()->bCanBeDamaged && bDealDamage)
+	if (Hit.GetActor() != NULL && Hit.GetActor()->CanBeDamaged() && bDealDamage)
 	{
 		int32 Damage = GetHitScanDamage();
 		TSubclassOf<UDamageType> DamageType = InstantHitInfo[CurrentFireMode].DamageType;

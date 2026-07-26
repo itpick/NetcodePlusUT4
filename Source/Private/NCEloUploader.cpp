@@ -57,7 +57,7 @@ namespace
 		{
 			FConfigFile ModIni;
 			ModIni.Read(ModIniPath);
-			if (const FConfigSection* Section = ModIni.Find(TEXT("UTPUGS_STATS")))
+			if (const FConfigSection* Section = ModIni.FindSection(TEXT("UTPUGS_STATS")))
 			{
 				if (const FConfigValue* KeyVal = Section->Find(FName(TEXT("Key"))))
 				{

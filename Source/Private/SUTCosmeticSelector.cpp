@@ -66,7 +66,7 @@ void SUTCosmeticSelector::GatherAllCosmetics()
 
 			FCosmeticItemInfo Info;
 			Info.AssetData = Asset;
-			Info.ClassPath = Asset.ObjectPath.ToString() + TEXT("_C");
+			Info.ClassPath = Asset.GetObjectPathString() + TEXT("_C");
 
 			// Extract display name from asset name (strip BP_ prefix, underscores to spaces)
 			FString Name = Asset.AssetName.ToString();

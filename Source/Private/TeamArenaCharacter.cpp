@@ -860,7 +860,7 @@ void ATeamArenaCharacter::FiringInfoUpdated()
                     static FName NAME_LocalHitLocation(TEXT("LocalHitLocation"));
 
                     PSC->SetVectorParameter(NAME_HitLocation, FlashLocation.Position);
-                    PSC->SetVectorParameter(NAME_LocalHitLocation, PSC->ComponentToWorld.InverseTransformPosition(FlashLocation.Position));
+                    PSC->SetVectorParameter(NAME_LocalHitLocation, PSC->GetComponentTransform().InverseTransformPosition(FlashLocation.Position));
 
                     // CRITICAL: Ensure visual parameters (Colors, Lightning Arcs) are applied
                     WeaponAttachment->ModifyFireEffect(PSC);

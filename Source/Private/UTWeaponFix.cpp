@@ -2028,18 +2028,18 @@ void AUTWeaponFix::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 
 float AUTWeaponFix::GetHitValidationPredictionTime() const
 {
-    if (Role != ROLE_Authority || !UTOwner || !UTOwner->PlayerState)
+    if (GetLocalRole() != ROLE_Authority || !UTOwner || !UTOwner->GetPlayerState())
     {
         return 0.0f;
     }
 
-    APlayerState* PS = Cast<APlayerState>(UTOwner->PlayerState);
+    APlayerState* PS = Cast<APlayerState>(UTOwner->GetPlayerState());
     if (!PS)
     {
         return 0.0f;
     }
 
-	float ExactPing = UTOwner->PlayerState->ExactPing;
+	float ExactPing = UTOwner->GetPlayerState()->ExactPing;
 
 	// 2. Subtract Fudge Factor (Epic uses 20ms)
 	// This subtracts the "Processing/Jitter" time so we don't over-rewind.
@@ -2092,7 +2092,7 @@ void AUTWeaponFix::HitScanTrace(const FVector& StartLocation, const FVector& End
     FVector BestCapsulePoint(0.f);
     float BestCollisionRadius = 0.f;
 
-    for (FConstPawnIterator Iterator = GetWorld()->GetPawnIterator(); Iterator; ++Iterator)
+    for (TActorIterator<APawn> Iterator(GetWorld()); Iterator; ++Iterator)
     {
         AUTCharacter* Target = Cast<AUTCharacter>(*Iterator);
         if (Target && (Target != UTOwner))
@@ -2113,7 +2113,7 @@ void AUTWeaponFix::HitScanTrace(const FVector& StartLocation, const FVector& End
 					//ExtraHitPadding = bIsMoving ? HitScanPadding : HitScanPaddingStationary;
 					if (bIsMoving)
 					{
-						float OwnerPing = (UTOwner && UTOwner->PlayerState) ? UTOwner->PlayerState->ExactPing : 0.0f;
+						float OwnerPing = (UTOwner && UTOwner->GetPlayerState()) ? UTOwner->GetPlayerState()->ExactPing : 0.0f;
 
 						// TIERED PADDING SYSTEM
 						// Running (940 u/s): 55 units = ~59ms jitter protection
@@ -2128,10 +2128,10 @@ void AUTWeaponFix::HitScanTrace(const FVector& StartLocation, const FVector& End
 					}
                 }
                 // find appropriate rewind position, and test against trace from StartLocation to Hit.Location
-                FVector TargetLocation = ((ActualPredictionTime > 0.f) && (Role == ROLE_Authority)) ? Target->GetRewindLocation(ActualPredictionTime) : Target->GetActorLocation();
-                if (Role == ROLE_Authority && ActualPredictionTime > 0.f)
+                FVector TargetLocation = ((ActualPredictionTime > 0.f) && (GetLocalRole() == ROLE_Authority)) ? Target->GetRewindLocation(ActualPredictionTime) : Target->GetActorLocation();
+                if (GetLocalRole() == ROLE_Authority && ActualPredictionTime > 0.f)
                 {
-                    float RTTms = UTOwner && UTOwner->PlayerState ? Cast<APlayerState>(UTOwner->PlayerState)->ExactPing : 0.f;
+                    float RTTms = UTOwner && UTOwner->GetPlayerState() ? Cast<APlayerState>(UTOwner->GetPlayerState())->ExactPing : 0.f;
                     float RewindDistance = (Target->GetActorLocation() - TargetLocation).Size();
 
       
@@ -2187,7 +2187,7 @@ void AUTWeaponFix::HitScanTrace(const FVector& StartLocation, const FVector& End
 	// Mirror the main-loop team guard (~line 1896): never run the time-search for a CLIENT-NAMED teammate when
 	// teammates don't block hitscan. ReceivedHitScanHitChar is fully client-controlled, so without this a client
 	// could name a teammate to force a near-graze body hit (FF-gated at damage, but it shouldn't be considered).
-	if (Role == ROLE_Authority &&
+	if (GetLocalRole() == ROLE_Authority &&
 		ReceivedHitScanHitChar != nullptr &&
 		BestTarget != ReceivedHitScanHitChar &&
 		(bTeammatesBlockHitscan || !GS || !GS->OnSameTeam(UTOwner, ReceivedHitScanHitChar)))
@@ -2273,14 +2273,14 @@ void AUTWeaponFix::HitScanTrace(const FVector& StartLocation, const FVector& End
         Hit.Location = BestPoint + BackDist * (StartLocation - EndTrace).GetSafeNormal();
         Hit.Normal = (Hit.Location - BestCapsulePoint).GetSafeNormal();
         Hit.ImpactNormal = Hit.Normal;
-        Hit.Actor = BestTarget;
+        Hit.HitObjectHandle = FActorInstanceHandle(BestTarget);
         Hit.bBlockingHit = true;
         Hit.Component = BestTarget->GetCapsuleComponent();
         Hit.ImpactPoint = BestPoint;
         Hit.Time = (BestPoint - StartLocation).Size() / (EndTrace - StartLocation).Size();
     }
 
-    if (Role == ROLE_Authority)
+    if (GetLocalRole() == ROLE_Authority)
     {
         OnServerHitScanResult(Hit, ActualPredictionTime);
     }
@@ -2302,7 +2302,7 @@ FRotator AUTWeaponFix::GetAdjustedAim_Implementation(FVector StartFireLoc)
     // gate causes hits to land at where the player aimed many shots ago.
     FRotator BaseAim;
 
-    if (Role == ROLE_Authority && bIsTransactionalFire && !CachedTransactionalRotation.IsZero())
+    if (GetLocalRole() == ROLE_Authority && bIsTransactionalFire && !CachedTransactionalRotation.IsZero())
     {
         BaseAim = CachedTransactionalRotation;
     }
@@ -2349,8 +2349,8 @@ FRotator AUTWeaponFix::GetBaseFireRotation()
     //
     // Client: cache is set right before Super::FireShot and cleared right
     // after, so non-zero already means "this one fake spawn we're in."
-    if ((Role == ROLE_Authority && bIsTransactionalFire && !CachedTransactionalRotation.IsZero()) ||
-        (Role < ROLE_Authority && !CachedTransactionalRotation.IsZero()))
+    if ((GetLocalRole() == ROLE_Authority && bIsTransactionalFire && !CachedTransactionalRotation.IsZero()) ||
+        (GetLocalRole() < ROLE_Authority && !CachedTransactionalRotation.IsZero()))
     {
         return CachedTransactionalRotation;
     }
@@ -2373,7 +2373,7 @@ FVector AUTWeaponFix::GetFireStartLoc(uint8 FireMode)
     // Gated on bIsTransactionalFire — same reason as GetAdjustedAim: the cache
     // isn't cleared per-shot on the server, so an ungated read applies
     // parallax shift using stale data from the wrong shot.
-    if (bIsProjectile && Role == ROLE_Authority && bIsTransactionalFire &&
+    if (bIsProjectile && GetLocalRole() == ROLE_Authority && bIsTransactionalFire &&
         !CachedTransactionalRotation.IsZero() && UTOwner)
     {
         float PredictionTime = GetHitValidationPredictionTime();
@@ -2422,7 +2422,7 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
         float TimeSinceLast = CurrentTime - LastShockCoreSpawnTime;
         if (TimeSinceLast < 0.2f)
         {
-            if (FireDbg()) UE_LOG(LogUTWeaponFix, Warning, TEXT("ShockCore anti-dup guard BLOCKED spawn. TimeSinceLast=%.4f Role=%d"), TimeSinceLast, (int32)Role);
+            if (FireDbg()) UE_LOG(LogUTWeaponFix, Warning, TEXT("ShockCore anti-dup guard BLOCKED spawn. TimeSinceLast=%.4f Role=%d"), TimeSinceLast, (int32)GetLocalRole());
             return nullptr;
         }
         LastShockCoreSpawnTime = CurrentTime;
@@ -2717,7 +2717,7 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
 				// Skip duplicate zero-offset samples
 				if (SampleIdx > 0 && SampleRewindTime <= 0.0f) continue;
 
-				for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+				for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 				{
 					AUTCharacter* Target = Cast<AUTCharacter>(*It);
 
@@ -2791,7 +2791,7 @@ AUTProjectile* AUTWeaponFix::SpawnNetPredictedProjectile(
 				// Uses exact capsule dimensions (no expansion) — just checks at a new point.
 				// =========================================================================
 				FVector PostTickLoc = NewProjectile->GetActorLocation();
-				for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+				for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 				{
 					AUTCharacter* Target = Cast<AUTCharacter>(*It);
 					if (Target && Target != UTOwner && !Target->IsDead())
@@ -2987,7 +2987,7 @@ void AUTWeaponFix::FireInstantHit(bool bDealDamage, FHitResult* OutHit)
             float BestDist = 9999.f;
             AUTCharacter* NearestChar = nullptr;
 
-            for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+            for (TActorIterator<APawn> It(GetWorld()); It; ++It)
             {
                 AUTCharacter* TestChar = Cast<AUTCharacter>(*It);
                 if (TestChar && TestChar != UTOwner && !TestChar->IsDead())
@@ -3302,7 +3302,7 @@ void AUTWeaponFix::FireCone()
         }
     }
     // do characters separately to handle forward prediction
-    for (FConstPawnIterator Iterator = GetWorld()->GetPawnIterator(); Iterator; ++Iterator)
+    for (TActorIterator<APawn> Iterator(GetWorld()); Iterator; ++Iterator)
     {
         AUTCharacter* Target = Cast<AUTCharacter>(*Iterator);
         if (Target && (Target != UTOwner) && (bTeammatesBlockHitscan || !GS || !GS->OnSameTeam(UTOwner, Target)))

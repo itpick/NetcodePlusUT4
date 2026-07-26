@@ -66,7 +66,7 @@ static float ResolveVersionReportTimeoutSec()
 	}
 	FConfigFile ModIni;
 	ModIni.Read(ModIniPath);
-	const FConfigSection* Section = ModIni.Find(TEXT("NetcodePlus"));
+	const FConfigSection* Section = ModIni.FindSection(TEXT("NetcodePlus"));
 	if (!Section)
 	{
 		return kVersionReportTimeoutDefault;

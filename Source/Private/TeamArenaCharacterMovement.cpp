@@ -1,6 +1,7 @@
 // TeamArenaCharacterMovement.cpp
 // High-FPS optimized movement component for UT4
 
+#include "EngineUtils.h"
 #include "TeamArenaCharacterMovement.h"
 #include "TeamArenaCharacter.h"
 #include "UTGameState.h"
@@ -130,9 +131,9 @@ void UTeamArenaCharacterMovement::UpdateTeamCollisionIgnores()
     }
 
     // This is Epic's original logic, just not running 480 times per second
-    for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+    for (TActorIterator<APawn> It(GetWorld()); It; ++It)
     {
-        AUTCharacter* Char = It->IsValid() ? Cast<AUTCharacter>((*It).Get()) : nullptr;
+        AUTCharacter* Char = Cast<AUTCharacter>(*It);
         if (Char)
         {
             bool bShouldIgnore = GS->OnSameTeam(UTOwner, Char) && 

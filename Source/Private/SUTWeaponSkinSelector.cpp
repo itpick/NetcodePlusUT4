@@ -486,7 +486,7 @@ void SUTWeaponSkinSelector::GatherSkins()
 	IAssetRegistry& AR = ARM.Get();
 
 	TArray<FAssetData> AssetList;
-	AR.GetAssetsByClass(UUTWeaponSkin::StaticClass()->GetFName(), AssetList, true);
+	AR.GetAssetsByClass(UUTWeaponSkin::StaticClass()->GetClassPathName(), AssetList, true);
 
 	// Build a map of weapon class → tag from our weapon list
 	// Also build set of valid weapon classes for skin matching

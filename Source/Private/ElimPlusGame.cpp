@@ -722,9 +722,9 @@ void AElimPlusGame::HandleServerManagement()
 	if (UTIsHandlingReplays())
 	{
 		UDemoNetDriver* DemoNetDriver = GetWorld()->GetDemoNetDriver();
-		if (DemoNetDriver != nullptr && DemoNetDriver->ReplayStreamer.IsValid())
+		if (DemoNetDriver != nullptr && DemoNetDriver->GetReplayStreamer().IsValid())
 		{
-			UTGameState->ReplayID = DemoNetDriver->ReplayStreamer->GetReplayID();
+			UTGameState->ReplayID = DemoNetDriver->GetReplayStreamer()->GetReplayID();
 		}
 	}
 }
@@ -1207,7 +1207,7 @@ void AElimPlusGame::EndRoundForTeam(int32 WinnerTeamIndex, FName Reason)
 				for (APlayerState* PS : GS->PlayerArray)
 				{
 					AUTPlayerState* UTPS = Cast<AUTPlayerState>(PS);
-					if (!UTPS || UTPS->bOnlySpectator) continue;
+					if (!UTPS || UTPS->IsOnlyASpectator()) continue;
 					if (UTPS->GetTeamNum() != TeamIdx) continue;
 
 					FElimPlusPlayerRoundPerf P;
@@ -1215,8 +1215,8 @@ void AElimPlusGame::EndRoundForTeam(int32 WinnerTeamIndex, FName Reason)
 					// system sees correct team sizes (e.g. 4v4 not 1v1 in a solo-vs-bots
 					// match). Synthetic BOT:<name> key prevents collisions with humans
 					// and is filtered out at write-back time so bot ratings never persist.
-					P.UniqueId = UTPS->UniqueId.IsValid()
-						? UTPS->UniqueId.ToString()
+					P.UniqueId = UTPS->GetUniqueId().IsValid()
+						? UTPS->GetUniqueId().ToString()
 						: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 					P.TeamIndex = TeamIdx;   // 0/1 — labels the per-round upload record
 					P.Kills    = UTPS->RoundKills;
@@ -1536,7 +1536,7 @@ void AElimPlusGame::CleanupWorldForNewRound()
 			IUTResetInterface::Execute_Reset(*It);
 		}
 	}
-	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
 		if (AUTCharacter* UTC = Cast<AUTCharacter>(It->Get()))
 		{
@@ -1718,7 +1718,7 @@ APawn* AElimPlusGame::SpawnDefaultPawnFor_Implementation(AController* NewPlayer,
 
 	// --- ATTEMPT 1: Strict spawn at exact PlayerStart ---
 	FActorSpawnParameters SpawnInfo;
-	SpawnInfo.Instigator = Instigator;
+	SpawnInfo.Instigator = GetInstigator();
 	SpawnInfo.ObjectFlags |= RF_Transient;
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
@@ -1942,11 +1942,11 @@ AActor* AElimPlusGame::ChoosePlayerStart_Implementation(AController* Player)
 		if (!Spawn) return;
 
 		const FVector SpawnLoc = Spawn->GetActorLocation();
-		for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
 			APawn* Pawn = It->Get();
-			if (!Pawn || !Pawn->PlayerState) continue;
-			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->PlayerState);
+			if (!Pawn || !Pawn->GetPlayerState()) continue;
+			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
 
 			const float Dist = (Pawn->GetActorLocation() - SpawnLoc).Size2D();
@@ -2009,11 +2009,11 @@ AActor* AElimPlusGame::ChoosePlayerStart_Implementation(AController* Player)
 	if (!BestSpawn && AllSpawnPointsList.Num() > 0)
 	{
 		TArray<FVector> TeammateLocs;
-		for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 		{
 			APawn* Pawn = It->Get();
-			if (!Pawn || !Pawn->PlayerState) continue;
-			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->PlayerState);
+			if (!Pawn || !Pawn->GetPlayerState()) continue;
+			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(Pawn->GetPlayerState());
 			if (!OtherPS || OtherPS == PS || !OtherPS->Team) continue;
 			if (OtherPS->Team->TeamIndex == TeamIndex)
 			{
@@ -2402,7 +2402,7 @@ AUTPlayerState* AElimPlusGame::FindAliveEnemy(AUTPlayerState* PS) const
 			if (!C) continue;
 
 			AUTPlayerState* OtherPS = Cast<AUTPlayerState>(C->PlayerState);
-			if (!OtherPS || OtherPS->bOnlySpectator) continue;
+			if (!OtherPS || OtherPS->IsOnlyASpectator()) continue;
 
 			APawn* P = C->GetPawn();
 			AUTCharacter* UTC = Cast<AUTCharacter>(P);
@@ -2431,7 +2431,7 @@ AUTPlayerState* AElimPlusGame::FindAliveTeammate(AUTPlayerState* PS) const
 		if (!C) continue;
 
 		AUTPlayerState* OtherPS = Cast<AUTPlayerState>(C->PlayerState);
-		if (!OtherPS || OtherPS == PS || OtherPS->bOnlySpectator) continue;
+		if (!OtherPS || OtherPS == PS || OtherPS->IsOnlyASpectator()) continue;
 
 		APawn* P = C->GetPawn();
 		AUTCharacter* UTC = Cast<AUTCharacter>(P);
@@ -2460,7 +2460,7 @@ int32 AElimPlusGame::CountAliveOnTeam(int32 TeamIndex) const
 			if (!C) continue;
 
 			AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-			if (!PS || PS->bOnlySpectator) continue;
+			if (!PS || PS->IsOnlyASpectator()) continue;
 
 			const APawn* P = C->GetPawn();
 			const AUTCharacter* UTC = Cast<AUTCharacter>(P);
@@ -2556,7 +2556,7 @@ bool AElimPlusGame::CanSpectate_Implementation(APlayerController* Viewer, APlaye
 		// the winners and Mouse1 (ServerViewNextPlayer) should cycle through them.
 		// Deferring to Super rejected the cycle because RoundCooldown isn't "match
 		// in progress" — so explicitly allow spectating any alive non-spectator.
-		if (!TargetPS->bOnlySpectator)
+		if (!TargetPS->IsOnlyASpectator())
 		{
 			const AController* TPC = Cast<AController>(TargetPS->GetOwner());
 			const APawn* TP = TPC ? TPC->GetPawn() : nullptr;
@@ -2600,7 +2600,7 @@ AUTPlayerState* AElimPlusGame::FindAliveOnTeamPS(int32 TeamIndex) const
 		if (!C) continue;
 
 		AUTPlayerState* PS = Cast<AUTPlayerState>(C->PlayerState);
-		if (!PS || PS->bOnlySpectator) continue;
+		if (!PS || PS->IsOnlyASpectator()) continue;
 
 		APawn* P = C->GetPawn();
 		const AUTCharacter* UTC = Cast<AUTCharacter>(P);
@@ -2658,7 +2658,7 @@ bool AElimPlusGame::GetAliveCounts(int32& OutAliveTeam0, int32& OutAliveTeam1) c
 	{
 		AUTPlayerState* PS = Cast<AUTPlayerState>(PSBase);
 		if (!PS) continue;
-		if (PS->bOnlySpectator)
+		if (PS->IsOnlyASpectator())
 		{
 			Spectators++;
 			continue;
@@ -3199,7 +3199,7 @@ void AElimPlusGame::ExecuteOvertimeWave()
 		CurrentOvertimeWave, CurrentWaveDamage, GetWorld()->GetNumPawns());
 	BP_OnOvertimeWave(CurrentWaveDamage, CurrentOvertimeWave);
 	int32 DamageCount = 0;
-	for (FConstPawnIterator It = GetWorld()->GetPawnIterator(); It; ++It)
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
 		if (!bRoundInProgress)
 		{

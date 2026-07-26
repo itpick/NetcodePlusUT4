@@ -23,7 +23,7 @@ bool FNCFireValCollector::IsEnabled()
 		{
 			FConfigFile ModIni;
 			ModIni.Read(ModIniPath);
-			if (const FConfigSection* Section = ModIni.Find(TEXT("NetcodePlus")))
+			if (const FConfigSection* Section = ModIni.FindSection(TEXT("NetcodePlus")))
 			{
 				if (const FConfigValue* V = Section->Find(FName(TEXT("EnableFireVal"))))
 				{
