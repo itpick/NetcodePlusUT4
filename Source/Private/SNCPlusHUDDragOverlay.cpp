@@ -281,7 +281,7 @@ int32 SNCPlusHUDDragOverlay::HitTest(const FVector2D& AbsoluteMousePos) const
 }
 
 int32 SNCPlusHUDDragOverlay::OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
-	FSlateWindowElementList& OutDrawElements,
+	const FSlateRect& MyClippingRect, FSlateWindowElementList& OutDrawElements,
 	int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
 	using namespace NCDragOverlay;

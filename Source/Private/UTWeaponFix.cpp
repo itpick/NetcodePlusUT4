@@ -3370,7 +3370,7 @@ void AUTWeaponFix::FireCone()
                     NewHit->Location = HitLocation;
                     NewHit->Normal = (EndTrace - ClosestCapsulePoint).GetSafeNormal();
                     NewHit->ImpactNormal = NewHit->Normal;
-                    NewHit->GetActor() = Target;
+                    NewHit->HitObjectHandle = FActorInstanceHandle(Target);
                     NewHit->bBlockingHit = true;
                     NewHit->Component = Target->GetCapsuleComponent();
                     NewHit->ImpactPoint = ClosestPoint; //FIXME
@@ -3431,13 +3431,13 @@ void AUTWeaponFix::FireCone()
     }
     for (const FHitResult& Hit : RealHits)
     {
-        if (UTOwner && Hit.GetActor() != NULL && Hit.GetActor()->bCanBeDamaged)
+        if (UTOwner && Hit.GetActor() != NULL && Hit.GetActor()->CanBeDamaged())
         {
             if ((GetLocalRole() == ROLE_Authority) && PS && (HitsStatsName != NAME_None))
             {
                 PS->ModifyStatsValue(HitsStatsName, 1);
             }
-            Hit.GetActor()->TakeDamage(InstantHitInfo[CurrentFireMode].Damage, FUTPointDamageEvent(InstantHitInfo[CurrentFireMode].Damage, Hit, FireDir, InstantHitInfo[CurrentFireMode].DamageType, FireDir * GetImpartedMomentumMag(Hit.Actor.Get())), UTOwner->Controller, this);
+            Hit.GetActor()->TakeDamage(InstantHitInfo[CurrentFireMode].Damage, FUTPointDamageEvent(InstantHitInfo[CurrentFireMode].Damage, Hit, FireDir, InstantHitInfo[CurrentFireMode].DamageType, FireDir * GetImpartedMomentumMag(Hit.GetActor())), UTOwner->Controller, this);
         }
     }
 }
@@ -3534,7 +3534,7 @@ void AUTWeaponFix::BringUp(float OverflowTime)
 				*GetName(), EarliestFireTime, (MaxBlockTime - CurrentTime) * 1000.f);
 			// DIAGNOSTIC (net-safe, survives Shipping): flag an ABNORMAL bring-up block (>1s) — the
 			// prime suspect for the silent multi-second rocket fire stall. Shows what set it + how far.
-			if (Role == ROLE_Authority && (MaxBlockTime - CurrentTime) > 1.0f)
+			if (GetLocalRole() == ROLE_Authority && (MaxBlockTime - CurrentTime) > 1.0f)
 			{
 				UE_LOG(LogUTWeaponFix, Warning,
 					TEXT("[FireBlock] %s BringUp set EarliestFireTime %.2fs ahead (=%.2f, now=%.2f)"),
@@ -3584,8 +3584,8 @@ void AUTWeaponFix::BringUp(float OverflowTime)
 				if (FPMeshArchetype)
 				{
 					FPMesh->SetRelativeLocationAndRotation(
-						FPMeshArchetype->RelativeLocation,
-						FPMeshArchetype->RelativeRotation
+						FPMeshArchetype->GetRelativeLocation(),
+						FPMeshArchetype->GetRelativeRotation()
 					);
 				}
 			}
@@ -3681,7 +3681,7 @@ void AUTWeaponFix::PlayFiringEffects()
 	const bool* bHidden = HiddenWeaponsByTag.Find(HideKey);
 	if (bHidden && *bHidden && UTOwner)
 	{
-		const uint8 EffectFiringMode = (Role == ROLE_Authority || UTOwner->Controller != nullptr) ? CurrentFireMode : UTOwner->FireMode;
+		const uint8 EffectFiringMode = (GetLocalRole() == ROLE_Authority || UTOwner->Controller != nullptr) ? CurrentFireMode : UTOwner->FireMode;
 		if (MuzzleFlash.IsValidIndex(EffectFiringMode))
 		{
 			SavedPSC = MuzzleFlash[EffectFiringMode];
@@ -3728,7 +3728,7 @@ void AUTWeaponFix::SetSkin(UMaterialInterface* NewSkin)
 void AUTWeaponFix::QueueResendFireFixed(bool bIsStartFire, uint8 FireModeNum, int32 InFireEventIndex, float ClientTimestamp, FRotator ClientViewRot, uint8 ZOffset, AUTCharacter* ClientHitChar)
 {
     // Only the owning client needs to queue retries
-    if (Role == ROLE_Authority && GetNetMode() != NM_Standalone) return;
+    if (GetLocalRole() == ROLE_Authority && GetNetMode() != NM_Standalone) return;
 
     // Create the payload
     FPendingFireEventFix NewEvent(bIsStartFire, FireModeNum, InFireEventIndex, ClientTimestamp, ClientViewRot, ZOffset, ClientHitChar);
@@ -3968,11 +3968,11 @@ void AUTWeaponFix::ResendServerStopFireFixed_Implementation(uint8 FireModeNum, i
         int32 LastIdx = AuthoritativeFireEventIndex[FireModeNum];
         if (InFireEventIndex <= LastIdx && (LastIdx - InFireEventIndex) < 100) return;
     }
-    if (UTOwner && UTOwner->PlayerState)
+    if (UTOwner && UTOwner->GetPlayerState())
     {
-        float CurrentPing = UTOwner->PlayerState->ExactPing;
+        float CurrentPing = UTOwner->GetPlayerState()->ExactPing;
         UE_LOG(LogUTWeaponFix, Verbose, TEXT("[Retry] STOP Fire Accepted for %s. Index: %d | Ping: %.2f ms | RTT Correction Applied"),
-            *UTOwner->PlayerState->GetPlayerName(), InFireEventIndex, CurrentPing);
+            *UTOwner->GetPlayerState()->GetPlayerName(), InFireEventIndex, CurrentPing);
     }
     bNetDelayedShot = true;
     ServerStopFireFixed(FireModeNum, InFireEventIndex, ClientTimestamp, ClientViewRot);
@@ -3998,13 +3998,13 @@ void AUTWeaponFix::NotifyFakeProjectileHit(AUTCharacter* HitTarget, const FVecto
 {
 	// During replay playback, skip all rewind/prediction logic
 	UWorld* W = GetWorld();
-	if (W && W->DemoNetDriver && W->DemoNetDriver->IsPlaying())
+	if (W && W->GetDemoNetDriver() && W->GetDemoNetDriver()->IsPlaying())
 	{
 		return;
 	}
 
 	// Client-side hitsound prediction for projectile weapons
-	if (HitTarget != nullptr && Role != ROLE_Authority)
+	if (HitTarget != nullptr && GetLocalRole() != ROLE_Authority)
 	{
 		AClientHitsounds* HitsoundsMut = FindClientHitsoundsMutator();
 		if (HitsoundsMut)
@@ -4037,7 +4037,7 @@ void AUTWeaponFix::OnTrackedProjectileResolved(AUTProjectile* Proj, AUTCharacter
 	// claim that arrives after the projectile is gone. Capturing here (vs a per-tick poll)
 	// gives the exact explosion position/velocity AND what it actually hit (for the
 	// double-damage guard).
-	if (Role != ROLE_Authority || !Proj)
+	if (GetLocalRole() != ROLE_Authority || !Proj)
 	{
 		return;
 	}
@@ -4097,11 +4097,11 @@ void AUTWeaponFix::ServerProjectileHitClaim_Implementation(AUTCharacter* Claimed
 	// shooter's FULL round-trip (snapshot age) - NOT half-RTT, and NOT the target's ping
 	// (the target's own lag is already baked into its recorded positions). The window cap
 	// bounds 'shot behind cover' and naturally degrades comp once RTT exceeds it.
-	if (!UTOwner || !UTOwner->PlayerState)
+	if (!UTOwner || !UTOwner->GetPlayerState())
 	{
 		return;
 	}
-	const float PingMs = UTOwner->PlayerState->ExactPing;
+	const float PingMs = UTOwner->GetPlayerState()->ExactPing;
 
 	// DIAGNOSTIC: log every claim that reaches here (passed target/team validation), with the
 	// shooter ping and how many projectiles are currently tracked. Tells us whether claims are
@@ -4361,7 +4361,7 @@ void AUTWeaponFix::ServerProjectileHitClaim_Implementation(AUTCharacter* Claimed
 	// targetMoved = how far the target's authoritative capsule advanced past where the shooter
 	// hit it == roughly how badly the un-compensated server test would have missed (> capsule
 	// radius ~46u means this hit ONLY landed because of lag comp).
-	const float TargetPingMs = ClaimedTarget->PlayerState ? ClaimedTarget->PlayerState->ExactPing : -1.f;
+	const float TargetPingMs = ClaimedTarget->GetPlayerState() ? ClaimedTarget->PlayerState->ExactPing : -1.f;
 	const float TargetMoved = (ClaimedTarget->GetActorLocation() - BestCenter).Size();
 
 	if (bFromGrace)
