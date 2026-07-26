@@ -89,14 +89,14 @@ void FNCFireValCollector::Record(UWorld* World, AUTPlayerState* Shooter, int32 S
 	FString Key;
 	if (!Shooter->StatsID.IsEmpty())      Key = TEXT("id:")   + Shooter->StatsID;
 	else if (Shooter->UniqueId.IsValid()) Key = TEXT("net:")  + Shooter->UniqueId.ToString();
-	else                                  Key = TEXT("name:") + Shooter->PlayerName;
+	else                                  Key = TEXT("name:") + Shooter->GetPlayerName();
 
 	AGameStateBase* GS = World ? World->GetGameState() : nullptr;
 	const float Now = GS ? GS->GetServerWorldTimeSeconds()
 	                     : (World ? World->GetTimeSeconds() : 0.0f);
 
 	FStat& S = Stats.FindOrAdd(Key);
-	S.PlayerName = Shooter->PlayerName; // keep the latest display name for this identity
+	S.PlayerName = Shooter->GetPlayerName(); // keep the latest display name for this identity
 	FSample Smp;
 	Smp.SampleMs    = FMath::Clamp(SampleMs, 0, 60000);
 	Smp.ServerTime  = Now;

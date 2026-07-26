@@ -192,7 +192,7 @@ void UNCPlusHUDWidget_Accuracy::Draw_Implementation(float DeltaTime)
 		{
 			const FString PlayerId = PS->UniqueId.IsValid()
 				? PS->UniqueId.ToString()
-				: FString::Printf(TEXT("BOT:%s"), *PS->PlayerName);
+				: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 			Hits  = Rep->GetHitsForPlayer (PlayerId, HitsStat);
 			Shots = Rep->GetShotsForPlayer(PlayerId, ShotsStat);
 		}

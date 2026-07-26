@@ -191,7 +191,7 @@ void UNCLeagueDuelScoreboard::DrawPlayerScore(AUTPlayerState* PS, float XOffset,
 	// the values server-side at 1Hz and replicates the percentage.
 	const FString PlayerId = PS->UniqueId.IsValid()
 		? PS->UniqueId.ToString()
-		: FString::Printf(TEXT("BOT:%s"), *PS->PlayerName);
+		: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 	float Pct = 0.f;
 	if (ANCLeagueDuelStatsReplicator* Rep = FindNCLeagueDuelStatsReplicator(GetWorld()))
 	{
@@ -339,7 +339,7 @@ void UNCLeagueDuelScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerStat
 
 	float NameXL, NameYL;
 	float ClanXL = 0.f;
-	FString DisplayName = PlayerState->PlayerName;
+	FString DisplayName = PlayerState->GetPlayerName();
 	FString ClanName = PlayerState->ClanName;
 	if (!PlayerState->ClanName.IsEmpty())
 	{
@@ -500,7 +500,7 @@ void UNCLeagueDuelScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerStat
 		float Height = 8.0f;
 		float XL, YL;
 		Canvas->TextSize(UTHUDOwner->SmallFont,
-			(PlayerState->PlayerName + PlayerState->ClanName), XL, YL, RenderScale, RenderScale);
+			(PlayerState->GetPlayerName() + PlayerState->ClanName), XL, YL, RenderScale, RenderScale);
 		float StrikeWidth = FMath::Min(0.475f*ScaledCellWidth, XL);
 		DrawTexture(UTHUDOwner->HUDAtlas, XOffset + (ScaledCellWidth * ColumnHeaderPlayerX),
 			YOffset + ColumnY, StrikeWidth, Height, 185.f, 400.f, 4.f, 4.f, 1.0f, FLinearColor::Red);

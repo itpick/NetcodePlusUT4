@@ -366,7 +366,7 @@ void UElimPlusScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState, f
 	const bool bIsDead = (UTC_Name == nullptr || UTC_Name->IsDead());
 	if (bIsDead) DrawColor *= 0.6f;
 
-	FString DisplayName = PlayerState->PlayerName;
+	FString DisplayName = PlayerState->GetPlayerName();
 	float NameXL, NameYL;
 	Canvas->TextSize(UTHUDOwner->SmallFont, DisplayName, NameXL, NameYL, 1.f, 1.f);
 	const float MaxNameWidth = 0.22f * ScaledCellWidth; // tighter — 9 stat columns to fit
@@ -475,7 +475,7 @@ void UElimPlusScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XOf
 	{
 		PId = PlayerState->UniqueId.IsValid()
 			? PlayerState->UniqueId.ToString()
-			: FString::Printf(TEXT("BOT:%s"), *PlayerState->PlayerName);
+			: FString::Printf(TEXT("BOT:%s"), *PlayerState->GetPlayerName());
 	}
 	const FElimPlusStatsEntry* Entry = (Stats && !PId.IsEmpty()) ? Stats->FindEntry(PId) : nullptr;
 
@@ -577,7 +577,7 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 		if (!Stats || !PS) return 0.f;
 		const FString PId = PS->UniqueId.IsValid()
 			? PS->UniqueId.ToString()
-			: FString::Printf(TEXT("BOT:%s"), *PS->PlayerName);
+			: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 		const FElimPlusStatsEntry* E = PId.IsEmpty() ? nullptr : Stats->FindEntry(PId);
 		return E ? E->PPRCurrent : 0.f;
 	};
@@ -602,7 +602,7 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 			{
 				if (Team == 0 && !PlayerState->bIsDemoRecording)
 				{
-					SpectatorNames.Add(PlayerState->PlayerName);
+					SpectatorNames.Add(PlayerState->GetPlayerName());
 				}
 				continue;
 			}
@@ -664,7 +664,7 @@ void UElimPlusScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 				SumK += TP->Kills;
 				SumD += TP->Deaths;
 				SumPPR += PPRByPlayer.FindRef(TP);
-				const FString PId = TP->UniqueId.IsValid() ? TP->UniqueId.ToString() : FString::Printf(TEXT("BOT:%s"), *TP->PlayerName);
+				const FString PId = TP->UniqueId.IsValid() ? TP->UniqueId.ToString() : FString::Printf(TEXT("BOT:%s"), *TP->GetPlayerName());
 				const FElimPlusStatsEntry* E = (Stats && !PId.IsEmpty()) ? Stats->FindEntry(PId) : nullptr;
 				SumDMG += E ? E->DamageDone : int32(TP->DamageDone);
 				SumElo += E ? E->Elo : 1400; ++CountElo;

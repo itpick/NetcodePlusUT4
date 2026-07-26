@@ -116,12 +116,12 @@ void UNCPlusHUDWidget_WeaponBar::Draw_Implementation(float DeltaTime)
 	using namespace NCPlusWB;
 
 	// Hard validity gate — alt-tab / world transitions can leave pointers stale.
-	if (!UTHUDOwner || UTHUDOwner->IsPendingKill()) return;
-	if (!UTHUDOwner->UTPlayerOwner || UTHUDOwner->UTPlayerOwner->IsPendingKill()) return;
+	if (!UTHUDOwner || !IsValid(UTHUDOwner)) return;
+	if (!UTHUDOwner->UTPlayerOwner || !IsValid(UTHUDOwner->UTPlayerOwner)) return;
 	if (!Canvas) return;
 
 	AActor* ViewTarget = UTHUDOwner->UTPlayerOwner->GetViewTarget();
-	if (!ViewTarget || ViewTarget->IsPendingKill()) return;
+	if (!ViewTarget || !IsValid(ViewTarget)) return;
 	AUTCharacter* Char = Cast<AUTCharacter>(ViewTarget);
 	if (!Char || Char->IsDead()) return;
 
@@ -198,7 +198,7 @@ void UNCPlusHUDWidget_WeaponBar::Draw_Implementation(float DeltaTime)
 	for (TInventoryIterator<AUTWeapon> It(Char); It; ++It)
 	{
 		AUTWeapon* W = *It;
-		if (!W || W->IsPendingKill()) continue;
+		if (!W || !IsValid(W)) continue;
 		UClass* WClass = W->GetClass();
 		if (!WClass) continue;
 		if (Layout.GetWeaponSide(WClass) == MySide)
@@ -217,7 +217,7 @@ void UNCPlusHUDWidget_WeaponBar::Draw_Implementation(float DeltaTime)
 	for (int32 i = 0; i < MyWeapons.Num(); i++)
 	{
 		AUTWeapon* W = MyWeapons[i];
-		if (!W || W->IsPendingKill()) continue;
+		if (!W || !IsValid(W)) continue;
 
 		const float SlotX = bVertical ? 0.f : i * (SlotW + SlotGap);
 		const float SlotY = bVertical ? i * (SlotH + SlotGap) : 0.f;
@@ -243,7 +243,7 @@ void UNCPlusHUDWidget_WeaponBar::Draw_Implementation(float DeltaTime)
 		// arguments INTERNALLY by texture size, so we pass the raw pixel values
 		// (NOT pre-normalized) — pre-dividing here would double-divide and shrink
 		// the sample region to a single texel (= invisible).
-		if (WeaponIconAtlas && !WeaponIconAtlas->IsPendingKill())
+		if (WeaponIconAtlas && IsValid(WeaponIconAtlas))
 		{
 			const FTextureUVs& UV = W->WeaponBarSelectedUVs;
 			FLinearColor IconCol = (UTHUDOwner->GetUseWeaponColors())

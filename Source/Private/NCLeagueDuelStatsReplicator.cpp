@@ -61,7 +61,7 @@ void ANCLeagueDuelStatsReplicator::UpdateFromPlayerStates()
 		// so future bot-accuracy displays line up.
 		Entry.PlayerId = UTPS->UniqueId.IsValid()
 			? UTPS->UniqueId.ToString()
-			: FString::Printf(TEXT("BOT:%s"), *UTPS->PlayerName);
+			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		// Hitscan accuracy = Sniper + Lightning Gun. The duel weapon set is the Pro+
 		// hitscan pair (UTNPSniper writes Sniper*; the LG BP is an AUTPlusSniper reskin
@@ -102,7 +102,7 @@ void ANCLeagueDuelStatsReplicator::UpdateFromPlayerStates()
 		// (WipeoutDamageReplicator.cpp:71, ElimPlusStatsReplicator.cpp:88).
 		// Direct member access also works in this codebase (ShockDom does it),
 		// but reflection is the established pattern for stats replicators here.
-		if (UIntProperty* DmgProp = FindField<UIntProperty>(UTPS->GetClass(), TEXT("DamageDone")))
+		if (FIntProperty* DmgProp = FindFProperty<FIntProperty>(UTPS->GetClass(), TEXT("DamageDone")))
 		{
 			Entry.DamageDone = DmgProp->GetPropertyValue_InContainer(UTPS);
 		}

@@ -70,8 +70,8 @@ void ANCShaftArenaHUD::DrawTeamScoreBar(AUTGameState* GS)
 	const FLinearColor BarColor(0.35f, 0.35f, 0.35f, 1.f);
 	const FLinearColor BoxColor(BarColor.R * 0.7f, BarColor.G * 0.7f, BarColor.B * 0.7f, 1.f);
 
-	const FString P1Name = P1->PlayerName;
-	const FString P2Name = P2->PlayerName;
+	const FString P1Name = P1->GetPlayerName();
+	const FString P2Name = P2->GetPlayerName();
 	const int32 Score1 = int32(P1->Score);
 	const int32 Score2 = int32(P2->Score);
 
@@ -149,12 +149,12 @@ void ANCShaftArenaHUD::DrawTeamScoreBar(AUTGameState* GS)
 		// Static cache: see WipeoutHUD/ElimPlusHUD for rationale (FindField was
 		// hitting the class-hierarchy walk every frame).
 		static UClass* CachedCls = nullptr;
-		static UIntProperty* CachedProp = nullptr;
+		static FIntProperty* CachedProp = nullptr;
 		UClass* GSCls = GS->GetClass();
 		if (CachedCls != GSCls)
 		{
 			CachedCls  = GSCls;
-			CachedProp = FindField<UIntProperty>(GSCls, TEXT("RemainingTime"));
+			CachedProp = FindFProperty<FIntProperty>(GSCls, TEXT("RemainingTime"));
 		}
 		if (CachedProp)
 		{

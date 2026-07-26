@@ -271,14 +271,14 @@ void ANCPlusCTFHUD::DrawSpectatorTarget()
 	if (ViewPawn == UTPlayerOwner->GetPawn()) return;
 
 	AUTPlayerState* PS = Cast<AUTPlayerState>(ViewPawn->PlayerState);
-	if (!PS || PS->PlayerName.IsEmpty()) return;
+	if (!PS || PS->GetPlayerName().IsEmpty()) return;
 
 	const float RenderScale = float(Canvas->SizeX) / 1920.0f;
 	const float HeaderScale = RenderScale * 0.75f;
 	const float NameScale   = RenderScale * 1.30f;
 
 	const FString HeaderText = TEXT("NOW WATCHING");
-	const FString NameText   = PS->PlayerName;
+	const FString NameText   = PS->GetPlayerName();
 
 	float HeaderW, HeaderH, NameW, NameH;
 	Canvas->TextSize(SmallFont,  HeaderText, HeaderW, HeaderH, HeaderScale, HeaderScale);

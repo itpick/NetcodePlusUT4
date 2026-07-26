@@ -56,7 +56,7 @@ void ANCShaftArenaStatsReplicator::UpdateFromPlayerStates()
 		FNCShaftArenaStatsEntry Entry;
 		Entry.PlayerId = UTPS->UniqueId.IsValid()
 			? UTPS->UniqueId.ToString()
-			: FString::Printf(TEXT("BOT:%s"), *UTPS->PlayerName);
+			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		// Link accuracy (Quake-style): per-beam-tick hit ratio.
 		// NAME_LinkHits ticks per damage chunk landed (engine-side, in the
@@ -80,7 +80,7 @@ void ANCShaftArenaStatsReplicator::UpdateFromPlayerStates()
 		// ElimPlusStatsReplicator.cpp:88). Direct member access also works
 		// (ShockDomReplicator does it), but reflection is the established
 		// pattern for stats replicators here.
-		if (UIntProperty* DmgProp = FindField<UIntProperty>(UTPS->GetClass(), TEXT("DamageDone")))
+		if (FIntProperty* DmgProp = FindFProperty<FIntProperty>(UTPS->GetClass(), TEXT("DamageDone")))
 		{
 			Entry.DamageDone = DmgProp->GetPropertyValue_InContainer(UTPS);
 		}

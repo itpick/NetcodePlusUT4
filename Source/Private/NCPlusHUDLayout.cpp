@@ -1363,7 +1363,7 @@ namespace NCPlusHUDDrawCall
 				{
 					// Name on top (cached fit), HP/armor below.
 					FText NameText; float NW, NH;
-					ResolveFittedName(Canvas, PS, NameFont, PS->PlayerName, PlateW - 8.f * S, NameScale, NameText, NW, NH);
+					ResolveFittedName(Canvas, PS, NameFont, PS->GetPlayerName(), PlateW - 8.f * S, NameScale, NameText, NW, NH);
 					Labels.Add(FPanelLabel{ NameFont, NameText,
 						CenterX - NW * NameScale * 0.5f, (RowY + PlateH * 0.30f) - NH * NameScale * 0.5f,
 						NameScale, FLinearColor(0.90f, 0.90f, 0.92f, 1.f) });
@@ -1394,7 +1394,7 @@ namespace NCPlusHUDDrawCall
 				{
 					// Enemy: name only, vertically centered (no live enemy HP).
 					FText NameText; float NW, NH;
-					ResolveFittedName(Canvas, PS, NameFont, PS->PlayerName, PlateW - 8.f * S, NameScale, NameText, NW, NH);
+					ResolveFittedName(Canvas, PS, NameFont, PS->GetPlayerName(), PlateW - 8.f * S, NameScale, NameText, NW, NH);
 					Labels.Add(FPanelLabel{ NameFont, NameText,
 						CenterX - NW * NameScale * 0.5f, (RowY + PlateH * 0.5f) - NH * NameScale * 0.5f,
 						NameScale, FLinearColor(0.92f, 0.92f, 0.95f, 1.f) });
@@ -1410,12 +1410,12 @@ namespace NCPlusHUDDrawCall
 		{
 			int32 RoundTime = -1;
 			static UClass* CachedClockCls = nullptr;
-			static UIntProperty* CachedClockProp = nullptr;
+			static FIntProperty* CachedClockProp = nullptr;
 			UClass* GSCls = GS->GetClass();
 			if (CachedClockCls != GSCls)
 			{
 				CachedClockCls  = GSCls;
-				CachedClockProp = FindField<UIntProperty>(GSCls, TEXT("RoundSecondsRemaining"));
+				CachedClockProp = FindFProperty<FIntProperty>(GSCls, TEXT("RoundSecondsRemaining"));
 			}
 			if (CachedClockProp)
 			{
@@ -1975,7 +1975,7 @@ static TMap<FName, FNCPlusWidgetDefaults> GWidgetDefaults;
 static FVector2D GetVec2Prop(UObject* Obj, FName PropName, const FVector2D& Fallback)
 {
 	if (!Obj) return Fallback;
-	UStructProperty* SP = FindField<UStructProperty>(Obj->GetClass(), PropName);
+	FStructProperty* SP = FindFProperty<FStructProperty>(Obj->GetClass(), PropName);
 	if (SP && SP->Struct == TBaseStructure<FVector2D>::Get())
 	{
 		if (FVector2D* Ptr = SP->ContainerPtrToValuePtr<FVector2D>(Obj))
@@ -1989,7 +1989,7 @@ static FVector2D GetVec2Prop(UObject* Obj, FName PropName, const FVector2D& Fall
 static void SetVec2Prop(UObject* Obj, FName PropName, const FVector2D& Val)
 {
 	if (!Obj) return;
-	UStructProperty* SP = FindField<UStructProperty>(Obj->GetClass(), PropName);
+	FStructProperty* SP = FindFProperty<FStructProperty>(Obj->GetClass(), PropName);
 	if (SP && SP->Struct == TBaseStructure<FVector2D>::Get())
 	{
 		if (FVector2D* Ptr = SP->ContainerPtrToValuePtr<FVector2D>(Obj))
@@ -2050,7 +2050,7 @@ void ApplyLayoutToWidgets(AUTHUD* HUD, const FNCPlusHUDLayout& Layout)
 	int32 NumApplied = 0;
 	for (UUTHUDWidget* W : HUD->HudWidgets)
 	{
-		if (!W || W->IsPendingKill()) continue;
+		if (!W || !IsValid(W)) continue;
 		UClass* WClass = W->GetClass();
 		if (!WClass) continue;
 		const FName Alias = NCPlusHUDAliases::GetAliasForClass(WClass);

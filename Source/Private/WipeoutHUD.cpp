@@ -211,14 +211,14 @@ void AWipeoutHUD::DrawSpectatorTarget()
 	if (ViewPawn == UTPlayerOwner->GetPawn()) return;   // own pawn = playing
 
 	AUTPlayerState* PS = Cast<AUTPlayerState>(ViewPawn->PlayerState);
-	if (!PS || PS->PlayerName.IsEmpty()) return;
+	if (!PS || PS->GetPlayerName().IsEmpty()) return;
 
 	const float RenderScale = float(Canvas->SizeX) / 1920.0f;
 	const float HeaderScale = RenderScale * 0.75f;
 	const float NameScale   = RenderScale * 1.30f;
 
 	const FString HeaderText = TEXT("NOW WATCHING");
-	const FString NameText   = PS->PlayerName;
+	const FString NameText   = PS->GetPlayerName();
 
 	float HeaderW, HeaderH, NameW, NameH;
 	Canvas->TextSize(SmallFont,  HeaderText, HeaderW, HeaderH, HeaderScale, HeaderScale);
@@ -442,7 +442,7 @@ void AWipeoutHUD::DrawHUD()
 					const float NameScale = float(Canvas->SizeY) / 1080.0f * 0.55f * WO_RedScale * NameFontExtra;
 					// Cached fit + one outlined item (was a per-frame StrLen loop + 5 DrawText).
 					FText NameText; float NW, NH;
-					NCPlusHUDDrawCall::ResolveFittedName(Canvas, UTPS, NameFont, UTPS->PlayerName, PipSize, NameScale, NameText, NW, NH);
+					NCPlusHUDDrawCall::ResolveFittedName(Canvas, UTPS, NameFont, UTPS->GetPlayerName(), PipSize, NameScale, NameText, NW, NH);
 					float NameX = XOffsetRed + (PipSize * 0.5f) - (NW * NameScale * 0.5f);
 					float NameY = YOffsetRed + 2.f;
 					NCPlusHUDDrawCall::DrawOutlinedText(Canvas, NameFont, NameText, NameX, NameY, NameScale, FLinearColor::White);
@@ -471,7 +471,7 @@ void AWipeoutHUD::DrawHUD()
 					const float NameScale = float(Canvas->SizeY) / 1080.0f * 0.55f * WO_BlueScale * NameFontExtra;
 					// Cached fit + one outlined item (was a per-frame StrLen loop + 5 DrawText).
 					FText NameText; float NW, NH;
-					NCPlusHUDDrawCall::ResolveFittedName(Canvas, UTPS, NameFont, UTPS->PlayerName, PipSize, NameScale, NameText, NW, NH);
+					NCPlusHUDDrawCall::ResolveFittedName(Canvas, UTPS, NameFont, UTPS->GetPlayerName(), PipSize, NameScale, NameText, NW, NH);
 					float NameX = XOffsetBlue + (PipSize * 0.5f) - (NW * NameScale * 0.5f);
 					float NameY = YOffsetBlue + 2.f;
 					NCPlusHUDDrawCall::DrawOutlinedText(Canvas, NameFont, NameText, NameX, NameY, NameScale, FLinearColor::White);
@@ -701,12 +701,12 @@ void AWipeoutHUD::DrawTeamScoreBar(AUTGameState* GS)
 	int32 ClockSeconds = -1;
 	{
 		static UClass* CachedRoundCls = nullptr;
-		static UIntProperty* CachedRoundProp = nullptr;
+		static FIntProperty* CachedRoundProp = nullptr;
 		UClass* GSCls = GS->GetClass();
 		if (CachedRoundCls != GSCls)
 		{
 			CachedRoundCls  = GSCls;
-			CachedRoundProp = FindField<UIntProperty>(GSCls, TEXT("RoundSecondsRemaining"));
+			CachedRoundProp = FindFProperty<FIntProperty>(GSCls, TEXT("RoundSecondsRemaining"));
 		}
 		if (CachedRoundProp)
 		{
@@ -723,12 +723,12 @@ void AWipeoutHUD::DrawTeamScoreBar(AUTGameState* GS)
 		// when 0/negative so untimed modes don't show "00:00" glued to the
 		// score bar.
 		static UClass* CachedRemCls = nullptr;
-		static UIntProperty* CachedRemProp = nullptr;
+		static FIntProperty* CachedRemProp = nullptr;
 		UClass* GSCls = GS->GetClass();
 		if (CachedRemCls != GSCls)
 		{
 			CachedRemCls  = GSCls;
-			CachedRemProp = FindField<UIntProperty>(GSCls, TEXT("RemainingTime"));
+			CachedRemProp = FindFProperty<FIntProperty>(GSCls, TEXT("RemainingTime"));
 		}
 		if (CachedRemProp)
 		{

@@ -454,7 +454,7 @@ void AUWipeoutGame::HandleMatchHasEnded()
 
 		FNCWipeoutPlayerInput P;
 		P.UniqueId   = UTPS->UniqueId.ToString();
-		P.PlayerName = UTPS->PlayerName;
+		P.PlayerName = UTPS->GetPlayerName();
 		P.TeamIndex  = UTPS->GetTeamNum();
 		P.Kills      = UTPS->Kills;
 		P.Deaths     = UTPS->Deaths;
@@ -516,10 +516,10 @@ void AUWipeoutGame::CallMatchStateChangeNotify()
 void AUWipeoutGame::DefaultTimer()
 {
 	if (GetWorld()->WorldType == EWorldType::EditorPreview) return;
-	if (IsPendingKill() || HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)) return;
+	if (IsPendingKillPending() || HasAnyFlags(RF_BeginDestroyed | RF_FinishDestroyed)) return;
 
 	AUTGameState* GS = GetWorld()->GetGameState<AUTGameState>();
-	if (GS == nullptr || GS->IsPendingKill() || GetWorld()->bIsTearingDown) return;
+	if (GS == nullptr || !IsValid(GS) || GetWorld()->bIsTearingDown) return;
 
 	HandleServerManagement();
 
@@ -796,7 +796,7 @@ void AUWipeoutGame::StartRespawnTimer(AUTPlayerState* DeadPS)
 	PlayerDeaths++;
 
 	UE_LOG(LogGameMode, Log, TEXT("Wipeout: %s died (Team %d, death #%d). Respawn in %.1fs"),
-		*DeadPS->PlayerName, TeamIndex,
+		*DeadPS->GetPlayerName(), TeamIndex,
 		(TeamIndex == 0) ? Team0DeathCount : Team1DeathCount,
 		RespawnDelay);
 
@@ -832,7 +832,7 @@ void AUWipeoutGame::StartRespawnTimer(AUTPlayerState* DeadPS)
 	FTimerDelegate SpectateDelegate;
 	SpectateDelegate.BindLambda([this, DeadPS]()
 	{
-		if (DeadPS && !DeadPS->IsPendingKill() && bRoundInProgress && IsPlayerWaitingToRespawn(DeadPS))
+		if (DeadPS && IsValid(DeadPS) && bRoundInProgress && IsPlayerWaitingToRespawn(DeadPS))
 		{
 			ForceTeamSpectate(DeadPS);
 		}
@@ -843,7 +843,7 @@ void AUWipeoutGame::StartRespawnTimer(AUTPlayerState* DeadPS)
 
 void AUWipeoutGame::OnRespawnTimerFired(AUTPlayerState* PS)
 {
-	if (!PS || PS->IsPendingKill()) return;
+	if (!PS || !IsValid(PS)) return;
 
 	// Safety: round might have ended during our wait
 	if (!bRoundInProgress)
@@ -855,7 +855,7 @@ void AUWipeoutGame::OnRespawnTimerFired(AUTPlayerState* PS)
 	// Sudden death — round timer expired, no more respawns allowed
 	if (bInSuddenDeath)
 	{
-		UE_LOG(LogGameMode, Log, TEXT("Wipeout: Respawn blocked for %s — sudden death active"), *PS->PlayerName);
+		UE_LOG(LogGameMode, Log, TEXT("Wipeout: Respawn blocked for %s — sudden death active"), *PS->GetPlayerName());
 		PendingRespawns.Remove(PS);
 		PS->RespawnTime = 0.f;
 		PS->ForceNetUpdate();
@@ -863,7 +863,7 @@ void AUWipeoutGame::OnRespawnTimerFired(AUTPlayerState* PS)
 		return;
 	}
 
-	UE_LOG(LogGameMode, Log, TEXT("Wipeout: Respawn timer fired for %s"), *PS->PlayerName);
+	UE_LOG(LogGameMode, Log, TEXT("Wipeout: Respawn timer fired for %s"), *PS->GetPlayerName());
 
 	// Remove from pending list
 	PendingRespawns.Remove(PS);
@@ -878,7 +878,7 @@ void AUWipeoutGame::OnRespawnTimerFired(AUTPlayerState* PS)
 	AController* C = Cast<AController>(PS->GetOwner());
 	if (!C)
 	{
-		UE_LOG(LogGameMode, Warning, TEXT("Wipeout: No controller for %s, cannot respawn"), *PS->PlayerName);
+		UE_LOG(LogGameMode, Warning, TEXT("Wipeout: No controller for %s, cannot respawn"), *PS->GetPlayerName());
 		return;
 	}
 
@@ -905,11 +905,11 @@ void AUWipeoutGame::OnRespawnTimerFired(AUTPlayerState* PS)
 		// Notify Blueprint
 		BP_OnPlayerRespawnedMidRound(PS);
 
-		UE_LOG(LogGameMode, Log, TEXT("Wipeout: %s respawned successfully"), *PS->PlayerName);
+		UE_LOG(LogGameMode, Log, TEXT("Wipeout: %s respawned successfully"), *PS->GetPlayerName());
 	}
 	else
 	{
-		UE_LOG(LogGameMode, Warning, TEXT("Wipeout: Failed to spawn pawn for %s"), *PS->PlayerName);
+		UE_LOG(LogGameMode, Warning, TEXT("Wipeout: Failed to spawn pawn for %s"), *PS->GetPlayerName());
 	}
 }
 
@@ -1026,7 +1026,7 @@ void AUWipeoutGame::ScoreKill_Implementation(AController* Killer, AController* O
 		FTimerDelegate SpecDelegate;
 		SpecDelegate.BindLambda([this, OtherPS]()
 		{
-			if (OtherPS && !OtherPS->IsPendingKill() && bRoundInProgress)
+			if (OtherPS && IsValid(OtherPS) && bRoundInProgress)
 			{
 				ForceTeamSpectate(OtherPS);
 			}
@@ -1039,7 +1039,7 @@ void AUWipeoutGame::ScoreKill_Implementation(AController* Killer, AController* O
 		// spawning): refund it — undo the death, free instant respawn, and do NOT
 		// escalate the team wave timer.
 		UE_LOG(LogGameMode, Warning, TEXT("Wipeout: refunding bad-spawn death for %s (no wave penalty)"),
-			*OtherPS->PlayerName);
+			*OtherPS->GetPlayerName());
 		RefundBadSpawnDeath(OtherPS);
 	}
 	else
@@ -1354,7 +1354,7 @@ void AUWipeoutGame::EndRoundForTeam(int32 WinnerTeamIndex, FName Reason)
 					// transient PlayerRating placeholders never persist.
 					P.UniqueId = UTPS->UniqueId.IsValid()
 						? UTPS->UniqueId.ToString()
-						: FString::Printf(TEXT("BOT:%s"), *UTPS->PlayerName);
+						: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 					P.Kills    = UTPS->RoundKills;
 					// Wipeout has mid-round respawns, so a single bOutOfLives flag
 					// at round-end can under-count actual deaths. PlayerDeathCounts
@@ -1648,7 +1648,7 @@ void AUWipeoutGame::RestartPlayer(AController* NewPlayer)
 			{
 				LastSpawnFailWarnTime = Now;
 				UE_LOG(LogGameMode, Warning, TEXT("Wipeout::RestartPlayer: FAILED to spawn pawn for %s (throttled 5s)"),
-					NewPlayer->PlayerState ? *NewPlayer->PlayerState->PlayerName : TEXT("Unknown"));
+					NewPlayer->PlayerState ? *NewPlayer->PlayerState->GetPlayerName() : TEXT("Unknown"));
 			}
 		}
 	}
@@ -1697,7 +1697,7 @@ void AUWipeoutGame::CheckSpawnRemediation(TWeakObjectPtr<APawn> WeakPawn)
 
 	APawn* Pawn = WeakPawn.Get();   // null if the pawn was destroyed mid-watch
 	AUTCharacter* Char = Pawn ? Cast<AUTCharacter>(Pawn) : nullptr;
-	bool bStop = (Pawn == nullptr) || Pawn->IsPendingKill() || (Char && Char->IsDead());
+	bool bStop = (Pawn == nullptr) || !IsValid(Pawn) || (Char && Char->IsDead());
 
 	if (!bStop && IsSpawnEjected(Pawn, R->Anchor))
 	{
@@ -1716,7 +1716,7 @@ void AUWipeoutGame::CheckSpawnRemediation(TWeakObjectPtr<APawn> WeakPawn)
 			Char->GetCharacterMovement()->Velocity = FVector::ZeroVector;
 		}
 		UE_LOG(LogGameMode, Warning, TEXT("Wipeout: bad spawn remediated — snapped %s back to %s"),
-			Pawn->PlayerState ? *Pawn->PlayerState->PlayerName : TEXT("?"), *R->Anchor.ToString());
+			Pawn->PlayerState ? *Pawn->PlayerState->GetPlayerName() : TEXT("?"), *R->Anchor.ToString());
 		bStop = true;   // one snap-back is enough
 	}
 
@@ -1881,7 +1881,7 @@ AActor* AUWipeoutGame::ChooseMidRoundSpawn(AController* Player)
 	if (BestSpawn)
 	{
 		UE_LOG(LogGameMode, Log, TEXT("Wipeout: Mid-round spawn for %s at %s (dist from enemy: %.0f)"),
-			*PS->PlayerName, *BestSpawn->GetName(), BestMinDist);
+			*PS->GetPlayerName(), *BestSpawn->GetName(), BestMinDist);
 		return BestSpawn;
 	}
 
@@ -1994,7 +1994,7 @@ AActor* AUWipeoutGame::ChoosePlayerStart_Implementation(AController* Player)
 				LastSpawnFallbackWarnTime = Now;
 				UE_LOG(LogGameMode, Warning,
 					TEXT("Wipeout: %s curated spawns failed %.0fu floor — using full-map spawn (passed floor) (throttled 5s)"),
-					*PS->PlayerName, MinimumEnemySpawnDistance);
+					*PS->GetPlayerName(), MinimumEnemySpawnDistance);
 			}
 		}
 	}
@@ -2047,14 +2047,14 @@ AActor* AUWipeoutGame::ChoosePlayerStart_Implementation(AController* Player)
 					LastTeammateStackWarnTime = Now;
 					UE_LOG(LogGameMode, Warning,
 						TEXT("Wipeout: %s — no spawn passes %.0fu floor; teammate-stacking at %.0fu from teammate (throttled 5s)"),
-						*PS->PlayerName, MinimumEnemySpawnDistance, BestTeammateDist);
+						*PS->GetPlayerName(), MinimumEnemySpawnDistance, BestTeammateDist);
 				}
 			}
 		}
 	}
 
 	UE_LOG(LogGameMode, Log, TEXT("Wipeout: %s (team %d) assigned spawn at %s (curated pool %d)"),
-		*PS->PlayerName, TeamIndex,
+		*PS->GetPlayerName(), TeamIndex,
 		BestSpawn ? *BestSpawn->GetActorLocation().ToString() : TEXT("NONE"),
 		MySpawns.Num());
 
@@ -2400,7 +2400,7 @@ void AUWipeoutGame::SendDeathRecap(AUTPlayerState* Victim, AUTPlayerState* Kille
 	int32 DmgFromKiller = GetLifeDamage(Killer, Victim);
 
 	FString Msg = FString::Printf(TEXT("You dealt %d to %s | They dealt %d to you"),
-		DmgToKiller, *Killer->PlayerName, DmgFromKiller);
+		DmgToKiller, *Killer->GetPlayerName(), DmgFromKiller);
 
 	VictimPC->ClientSay(nullptr, Msg, ChatDestinations::System);
 }
@@ -2460,7 +2460,7 @@ void AUWipeoutGame::CleanupWorldForNewRound()
 	{
 		if (AUTCharacter* UTC = Cast<AUTCharacter>(It->Get()))
 		{
-			if (UTC->IsDead() && !UTC->IsPendingKill())
+			if (UTC->IsDead() && IsValid(UTC))
 			{
 				UTC->Destroy();
 			}
@@ -2479,7 +2479,7 @@ bool AUWipeoutGame::GetAliveCounts(int32& OutAliveTeam0, int32& OutAliveTeam1) c
 	OutAliveTeam1 = 0;
 
 	AUTGameState* GS = GetGameState<AUTGameState>();
-	if (!GS || GS->IsPendingKill()) return false;
+	if (!GS || !IsValid(GS)) return false;
 
 	for (APlayerState* PSBase : GS->PlayerArray)
 	{
@@ -2502,7 +2502,7 @@ bool AUWipeoutGame::GetTeamMemberCounts(int32& OutTeam0, int32& OutTeam1) const
 	OutTeam1 = 0;
 
 	AUTGameState* GS = GetGameState<AUTGameState>();
-	if (!GS || GS->IsPendingKill()) return false;
+	if (!GS || !IsValid(GS)) return false;
 
 	// Same filters as GetAliveCounts, minus the living-pawn requirement: counts
 	// everyone ON a team — alive, dead, or waiting on a respawn wave.
@@ -3370,7 +3370,7 @@ void AUWipeoutGame::CheckForHighDamageCarry(int32 WinnerTeamIndex)
 void AUWipeoutGame::RecordHighDamageCarry(AUTPlayerState* PlayerState, float DamagePercentage)
 {
 	if (!PlayerState) return;
-	UE_LOG(LogGameMode, Log, TEXT("Wipeout High Damage Carry: %s (%.1f%%)"), *PlayerState->PlayerName, DamagePercentage);
+	UE_LOG(LogGameMode, Log, TEXT("Wipeout High Damage Carry: %s (%.1f%%)"), *PlayerState->GetPlayerName(), DamagePercentage);
 	OnPlayerHighDamageCarry.Broadcast(PlayerState, DamagePercentage);
 }
 
@@ -3500,7 +3500,7 @@ void AUWipeoutGame::Logout(AController* Exiting)
 			AUTPlayerState* ExitingPS = Cast<AUTPlayerState>(Exiting->PlayerState);
 			if (ExitingPS && !ExitingPS->bIsABot && !ExitingPS->bOnlySpectator)
 			{
-				UE_LOG(LogGameMode, Warning, TEXT("Wipeout: Player %s disconnected. Pausing match."), *ExitingPS->PlayerName);
+				UE_LOG(LogGameMode, Warning, TEXT("Wipeout: Player %s disconnected. Pausing match."), *ExitingPS->GetPlayerName());
 				SetPause(nullptr);
 			}
 		}

@@ -261,7 +261,7 @@ void ANCPlusCTFGameMode::PostLogin(APlayerController* NewPlayer)
 		{
 			AutoPauseAwaitIds.Remove(Uid);
 			UE_LOG(LogGameMode, Warning, TEXT("NCPlusCTF auto-pause: %s rejoined (%d still out)"),
-				*UTPS->PlayerName, AutoPauseAwaitIds.Num());
+				*UTPS->GetPlayerName(), AutoPauseAwaitIds.Num());
 			if (AutoPauseAwaitIds.Num() == 0)
 			{
 				EndAutoPause(TEXT("all dropped players rejoined"));
@@ -407,7 +407,7 @@ void ANCPlusCTFGameMode::Logout(AController* Exiting)
 				MatchStatCache.Add(Uid, MoveTemp(P));
 				UE_LOG(LogGameMode, Log,
 					TEXT("NCPlusCTF: rated leaver %s (presence %.0f%%, takes match result)"),
-					*UTPS->PlayerName, Frac * 100.f);
+					*UTPS->GetPlayerName(), Frac * 100.f);
 			}
 			else
 			{
@@ -416,7 +416,7 @@ void ANCPlusCTFGameMode::Logout(AController* Exiting)
 				MatchStatCache.Remove(Uid);
 				UE_LOG(LogGameMode, Log,
 					TEXT("NCPlusCTF: dropped early leaver %s (presence %.0f%% < %.0f%%)"),
-					*UTPS->PlayerName, Frac * 100.f, CTFRatingMinPresenceFrac * 100.f);
+					*UTPS->GetPlayerName(), Frac * 100.f, CTFRatingMinPresenceFrac * 100.f);
 			}
 		}
 	}
@@ -432,7 +432,7 @@ void ANCPlusCTFGameMode::Logout(AController* Exiting)
 		if (LeavePS && !LeavePS->bIsABot && !LeavePS->bOnlySpectator
 			&& LeavePS->UniqueId.IsValid() && LeavePS->GetTeamNum() <= 1)
 		{
-			BeginOrHoldAutoPause(LeavePS->UniqueId.ToString(), LeavePS->PlayerName);
+			BeginOrHoldAutoPause(LeavePS->UniqueId.ToString(), LeavePS->GetPlayerName());
 		}
 	}
 
@@ -503,7 +503,7 @@ void ANCPlusCTFGameMode::EndAutoPause(const TCHAR* Reason)
 void ANCPlusCTFGameMode::CapturePlayerStats(AUTPlayerState* UTPS, FNCPlusCTFPlayerInput& Out) const
 {
 	Out.UniqueId   = UTPS->UniqueId.ToString();
-	Out.PlayerName = UTPS->PlayerName;
+	Out.PlayerName = UTPS->GetPlayerName();
 	Out.TeamIndex  = UTPS->GetTeamNum();
 	Out.Kills      = UTPS->Kills;
 	Out.Deaths     = UTPS->Deaths;
@@ -896,7 +896,7 @@ void ANCPlusCTFGameMode::RestartPlayer(AController* NewPlayer)
 		APlayerStart* SS = Cast<APlayerStart>(NewPlayer->StartSpot.Get());
 		UE_LOG(LogGameMode, Warning,
 			TEXT("NCPlusCTF spawn: %s(T%d) pawn=(%.0f,%.0f) recent=%s dist_from_last=%d | StartSpot=%s | own_flag=%s enemy_flag=%s"),
-			PS ? *PS->PlayerName : TEXT("?"), TeamIdx,
+			PS ? *PS->GetPlayerName() : TEXT("?"), TeamIdx,
 			SpawnLoc.X, SpawnLoc.Y, RecentTag, DistFromLast,
 			SS ? *SS->GetName() : TEXT("(none)"),
 			*OwnFlag, *EnemyFlag);
@@ -1335,7 +1335,7 @@ AActor* ANCPlusCTFGameMode::ChoosePlayerStart_Implementation(AController* Player
 	}
 	UE_LOG(LogGameMode, Warning,
 		TEXT("NCPlusCTF pick: %s(T%d) -> %s | band=%d fresh=%d kblk=%d rbblk=%d (pool=%d)"),
-		*PS->PlayerName, TeamIndex, *Best->GetName(), TopBand.Num(), bForceFresh ? 1 : 0,
+		*PS->GetPlayerName(), TeamIndex, *Best->GetName(), TopBand.Num(), bForceFresh ? 1 : 0,
 		KillerBlocked, RobbedBlocked, Pool.Num());
 
 	return Best;
@@ -1859,7 +1859,7 @@ void ANCPlusCTFGameMode::PickMostCoolMoments(bool bClearCoolMoments, int32 CoolM
 		}
 	}
 	UE_LOG(LogGameMode, Warning, TEXT("NCPlusCTF replay: featured decisive cap by %s (rewind %.1fs, demo %.1fs)"),
-		*FeaturePS->PlayerName, Rewind,
+		*FeaturePS->GetPlayerName(), Rewind,
 		(GetWorld()->DemoNetDriver != nullptr) ? GetWorld()->DemoNetDriver->DemoCurrentTime : 0.f);
 }
 

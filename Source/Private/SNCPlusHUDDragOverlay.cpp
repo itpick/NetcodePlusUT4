@@ -200,7 +200,7 @@ void SNCPlusHUDDragOverlay::RefreshCachedElements() const
 	// --- Widget-backed aliases (render rects come from UUTHUDWidget itself) ---
 	for (UUTHUDWidget* W : HUD->HudWidgets)
 	{
-		if (!W || W->IsPendingKill()) continue;
+		if (!W || !IsValid(W)) continue;
 		const FName Alias = NCPlusHUDAliases::GetAliasForClass(W->GetClass());
 		if (Alias == NAME_None) continue;
 

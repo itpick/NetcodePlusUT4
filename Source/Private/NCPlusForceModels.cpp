@@ -579,7 +579,7 @@ void NCPlusForceModels::SuppressFlagCarrierOutlines(UWorld* World)
 		for (TActorIterator<AUTCharacter> It(World); It; ++It)
 		{
 			AUTCharacter* C = *It;
-			if (!C || C->IsPendingKill() || !Cast<AUTFlag>(C->GetCarriedObject())) { continue; }
+			if (!C || !IsValid(C) || !Cast<AUTFlag>(C->GetCarriedObject())) { continue; }
 			Current.Add(C);
 			if (!C->bForceNoOutline)
 			{
@@ -767,7 +767,7 @@ void NCPlusForceModels::OutlinePlayers(UWorld* World, bool bSlowTick)
 		for (TActorIterator<AUTCharacter> It(World); It; ++It)
 		{
 			AUTCharacter* Ch = *It;
-			if (!Ch || Ch->IsPendingKill() || Ch->IsDead() || Ch == LocalPawn) { continue; }
+			if (!Ch || !IsValid(Ch) || Ch->IsDead() || Ch == LocalPawn) { continue; }
 			// Enemy-Only style: leave friendlies un-outlined (mirrors the reskin scoping).
 			if (C.Style == ENCPlusSkinStyle::EnemyOnly && (int32)Ch->GetTeamNum() == ViewerTeam) { continue; }
 			// Suppressed flag carriers belong to SuppressFlagCarrierOutlines — leave their state alone.
@@ -1341,7 +1341,7 @@ void NCPlusForceModels::DumpAllCharacterMaterials(UWorld* World)
 	{
 		AUTCharacter* Char = *It;
 		if (!Char) { continue; }
-		const FString PawnName = Char->PlayerState ? Char->PlayerState->PlayerName : Char->GetName();
+		const FString PawnName = Char->PlayerState ? Char->PlayerState->GetPlayerName() : Char->GetName();
 		const TArray<UMaterialInstanceDynamic*>& MIDs = Char->GetBodyMIs();
 		UE_LOG(LogTemp, Warning, TEXT("[ForceModels] '%s' — %d body material(s), LIVE values:"), *PawnName, MIDs.Num());
 		static const FName NAME_TeamSelect(TEXT("TeamSelect"));

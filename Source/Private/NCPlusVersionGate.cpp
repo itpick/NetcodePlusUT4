@@ -89,7 +89,7 @@ static float ResolveVersionReportTimeoutSec()
 static FString ResolveOwnerName(AActor* Gate)
 {
 	APlayerController* PC = Gate ? Cast<APlayerController>(Gate->GetOwner()) : nullptr;
-	return (PC && PC->PlayerState) ? PC->PlayerState->PlayerName : FString(TEXT("<unknown>"));
+	return (PC && PC->PlayerState) ? PC->PlayerState->GetPlayerName() : FString(TEXT("<unknown>"));
 }
 
 // Corroborating "this client is really here and functional" signal for the no-report

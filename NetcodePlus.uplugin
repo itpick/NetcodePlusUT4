@@ -7,11 +7,14 @@
   "Category": "Gameplay",
   "CreatedBy": "phantaci",
   "CreatedByURL": "",
+  "EnabledByDefault": true,
+  "CanContainContent": true,
   "Modules": [
     {
       "Name": "NetcodePlus",
-      "Type" : "Runtime",
-			"WhitelistPlatforms" : [ "Win32", "Win64", "Linux" ]
-		}
-	]
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "PlatformAllowList": [ "Win64", "Linux", "Mac" ]
+    }
+  ]
 }

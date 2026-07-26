@@ -462,7 +462,7 @@ static void HandleHUDDragOverlay(const TArray<FString>& Args)
 // APlayerController::ClientTravel makes internally, minus the controller.
 // ---------------------------------------------------------------------------
 
-static FDelegateHandle GNcpConnectTickerHandle;
+static FTSTicker::FDelegateHandle GNcpConnectTickerHandle;
 static FString         GNcpConnectURL;
 static float           GNcpConnectElapsed = 0.0f;
 
@@ -556,7 +556,7 @@ static bool TickNcpConnect(float DeltaTime)
 // because TeamColor is replicated and the server periodically reverts it. No-op unless a
 // game world exists and the feature + HUD flag are on (see NCPlusForceModels::SyncHudTeamColours).
 // ---------------------------------------------------------------------------
-static FDelegateHandle GHudColourTickerHandle;
+static FTSTicker::FDelegateHandle GHudColourTickerHandle;
 static float           GHudColourAccum = 0.0f;
 // Post-match-join killcam crash guard (see TickHudTeamColours). GIRGuardWorld = the game world whose
 // initial match state we've already evaluated (raw ptr, compared only, never dereferenced);
@@ -896,7 +896,7 @@ void FNetcodePlus::StartupModule()
 		{
 			GNcpConnectURL = ConnectURL;
 			GNcpConnectElapsed = 0.0f;
-			GNcpConnectTickerHandle = FTicker::GetCoreTicker().AddTicker(
+			GNcpConnectTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 				FTickerDelegate::CreateStatic(&TickNcpConnect), 0.0f);
 		}
 	}
@@ -906,7 +906,7 @@ void FNetcodePlus::StartupModule()
 	if (!IsRunningDedicatedServer())
 	{
 		GHudColourAccum = 0.0f;
-		GHudColourTickerHandle = FTicker::GetCoreTicker().AddTicker(
+		GHudColourTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 			FTickerDelegate::CreateStatic(&TickHudTeamColours), 0.0f);
 	}
 
@@ -928,14 +928,14 @@ void FNetcodePlus::ShutdownModule()
 	// Stop the -ncpconnect ticker if it never fired.
 	if (GNcpConnectTickerHandle.IsValid())
 	{
-		FTicker::GetCoreTicker().RemoveTicker(GNcpConnectTickerHandle);
+		FTSTicker::GetCoreTicker().RemoveTicker(GNcpConnectTickerHandle);
 		GNcpConnectTickerHandle.Reset();
 	}
 
 	// Stop the HUD team-colour ticker.
 	if (GHudColourTickerHandle.IsValid())
 	{
-		FTicker::GetCoreTicker().RemoveTicker(GHudColourTickerHandle);
+		FTSTicker::GetCoreTicker().RemoveTicker(GHudColourTickerHandle);
 		GHudColourTickerHandle.Reset();
 	}
 

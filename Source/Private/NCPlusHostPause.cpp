@@ -78,7 +78,7 @@ static TWeakObjectPtr<AUTBaseGameMode> GUnpauseGM;
 static int32         GUnpauseRemain = 0;
 static bool          GUnpauseActive = false;
 static bool          GUnpauseFiring = false;
-static FDelegateHandle GUnpauseTicker;
+static FTSTicker::FDelegateHandle GUnpauseTicker;
 
 static void BroadcastResuming(AUTBaseGameMode* GM, int32 N)
 {
@@ -225,7 +225,7 @@ namespace NCPlusHostPause
 				return false;   // too soon after the last captain pause
 			}
 			GLastCaptainPauseTime = Now;
-			UE_LOG(LogNCHostPause, Warning, TEXT("[CaptainPause] %s paused the match"), *PS->PlayerName);
+			UE_LOG(LogNCHostPause, Warning, TEXT("[CaptainPause] %s paused the match"), *PS->GetPlayerName());
 		}
 		return true;
 	}
@@ -256,7 +256,7 @@ namespace NCPlusHostPause
 		// belongs to a different (or dead) gamemode, drop it and fall through to start fresh.
 		if (GUnpauseActive && GUnpauseGM.Get() != GM)
 		{
-			FTicker::GetCoreTicker().RemoveTicker(GUnpauseTicker);
+			FTSTicker::GetCoreTicker().RemoveTicker(GUnpauseTicker);
 			GUnpauseActive = false;
 		}
 
@@ -282,7 +282,7 @@ namespace NCPlusHostPause
 		GUnpauseRemain = GUnpauseSec;
 		GUnpauseGM     = GM;
 		BroadcastResuming(GM, GUnpauseRemain);
-		GUnpauseTicker = FTicker::GetCoreTicker().AddTicker(
+		GUnpauseTicker = FTSTicker::GetCoreTicker().AddTicker(
 			FTickerDelegate::CreateStatic(&UnpauseTick), 1.0f);
 		UE_LOG(LogNCHostPause, Log, TEXT("[HostPause] unpause requested — holding %ds countdown"), GUnpauseSec);
 		return true;   // defer: stay paused until the countdown fires the real clear

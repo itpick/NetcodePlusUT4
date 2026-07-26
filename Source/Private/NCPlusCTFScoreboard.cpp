@@ -217,7 +217,7 @@ void UNCPlusCTFScoreboard::DrawPlayerScore(AUTPlayerState* PlayerState, float XO
 	ACTFStatsReplicator* Rep = FindStatsReplicator();
 	const FString PlayerId = PlayerState->UniqueId.IsValid()
 		? PlayerState->UniqueId.ToString()
-		: FString::Printf(TEXT("BOT:%s"), *PlayerState->PlayerName);
+		: FString::Printf(TEXT("BOT:%s"), *PlayerState->GetPlayerName());
 	const FCtfColumnLayout& L = GetActiveLayout();
 	const bool bInstagib = (&L == &InstagibLayout);
 
@@ -334,9 +334,9 @@ void UNCPlusCTFScoreboard::DrawPlayerScores(float RenderDelta, float& YOffset)
 						if (Place > NumPlayersToShow) break;
 					}
 				}
-				else if (Team == 0 && !PlayerState->bIsDemoRecording && !PlayerState->PlayerName.IsEmpty())
+				else if (Team == 0 && !PlayerState->bIsDemoRecording && !PlayerState->GetPlayerName().IsEmpty())
 				{
-					SpectatorNames.Add(PlayerState->PlayerName);
+					SpectatorNames.Add(PlayerState->GetPlayerName());
 				}
 			}
 		}
@@ -502,7 +502,7 @@ void UNCPlusCTFScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState,
 
 	float NameXL, NameYL;
 	float ClanXL = 0.f;
-	FString DisplayName = PlayerState->PlayerName;
+	FString DisplayName = PlayerState->GetPlayerName();
 	FString ClanName = PlayerState->ClanName;
 	if (!PlayerState->ClanName.IsEmpty())
 	{
@@ -659,7 +659,7 @@ void UNCPlusCTFScoreboard::DrawPlayer(int32 Index, AUTPlayerState* PlayerState,
 		float Height = 8.0f;
 		float XL, YL;
 		Canvas->TextSize(UTHUDOwner->SmallFont,
-			(PlayerState->PlayerName + PlayerState->ClanName), XL, YL, RenderScale, RenderScale);
+			(PlayerState->GetPlayerName() + PlayerState->ClanName), XL, YL, RenderScale, RenderScale);
 		float StrikeWidth = FMath::Min(0.475f*ScaledCellWidth, XL);
 		DrawTexture(UTHUDOwner->HUDAtlas, XOffset + (ScaledCellWidth * ColumnHeaderPlayerX),
 			YOffset + ColumnY, StrikeWidth, Height, 185.f, 400.f, 4.f, 4.f, 1.0f, FLinearColor::Red);

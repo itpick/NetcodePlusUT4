@@ -199,7 +199,7 @@ void ANCShaftArenaGame::PostLogin(APlayerController* NewPlayer)
 	if (Role != ROLE_Authority || !RatingSystem || !NewPlayer) return;
 	AUTPlayerState* PS = Cast<AUTPlayerState>(NewPlayer->PlayerState);
 	if (!PS) return;
-	const FString UniqueId = PS->StatsID.IsEmpty() ? PS->PlayerName : PS->StatsID;
+	const FString UniqueId = PS->StatsID.IsEmpty() ? PS->GetPlayerName() : PS->StatsID;
 	RatingSystem->LoadPlayerFromDB(GetWorld(), UniqueId);
 }
 
@@ -235,8 +235,8 @@ void ANCShaftArenaGame::HandleMatchHasEnded()
 
 	if (Winner && Loser)
 	{
-		const FString WinnerId = Winner->StatsID.IsEmpty() ? Winner->PlayerName : Winner->StatsID;
-		const FString LoserId  = Loser->StatsID.IsEmpty()  ? Loser->PlayerName  : Loser->StatsID;
+		const FString WinnerId = Winner->StatsID.IsEmpty() ? Winner->GetPlayerName() : Winner->StatsID;
+		const FString LoserId  = Loser->StatsID.IsEmpty()  ? Loser->GetPlayerName()  : Loser->StatsID;
 		const float WinnerAcc = ComputeLinkAccuracyPct(Winner);
 		const float LoserAcc  = ComputeLinkAccuracyPct(Loser);
 		const int32 WinnerStreak = BestStreakThisMatch.FindRef(Winner);
@@ -252,12 +252,12 @@ void ANCShaftArenaGame::HandleMatchHasEnded()
 		// Push the global-ELO update to ut4stats.com.
 		FNCShaftArenaMatchInput UploadIn;
 		UploadIn.WinnerId       = WinnerId;
-		UploadIn.WinnerName     = Winner->PlayerName;
+		UploadIn.WinnerName     = Winner->GetPlayerName();
 		UploadIn.WinnerScore    = Winner->Score;
 		UploadIn.WinnerStreak   = WinnerStreak;
 		UploadIn.WinnerAccuracy = WinnerAcc;
 		UploadIn.LoserId        = LoserId;
-		UploadIn.LoserName      = Loser->PlayerName;
+		UploadIn.LoserName      = Loser->GetPlayerName();
 		UploadIn.LoserScore     = Loser->Score;
 		UploadIn.LoserStreak    = LoserStreak;
 		UploadIn.LoserAccuracy  = LoserAcc;
@@ -358,7 +358,7 @@ bool ANCShaftArenaGame::CheckScore_Implementation(AUTPlayerState* Scorer)
 	{
 		UE_LOG(LogNCShaftArena, Log,
 			TEXT("CheckScore: ending match — %s reached %d (margin %d)"),
-			*Leader->PlayerName, LeaderScore, LeaderScore - RunnerScore);
+			*Leader->GetPlayerName(), LeaderScore, LeaderScore - RunnerScore);
 		EndGame(Leader, FName(TEXT("fraglimit")));
 		return true;
 	}
@@ -393,8 +393,8 @@ void ANCShaftArenaGame::BuildMatchSummary(FNCMatchSummary& Out) const
 		if (!UTPS || UTPS->bOnlySpectator) continue;
 
 		FNCPlayerSummary P;
-		P.UniqueId   = UTPS->StatsID.IsEmpty() ? UTPS->PlayerName : UTPS->StatsID;
-		P.PlayerName = UTPS->PlayerName;
+		P.UniqueId   = UTPS->StatsID.IsEmpty() ? UTPS->GetPlayerName() : UTPS->StatsID;
+		P.PlayerName = UTPS->GetPlayerName();
 		P.Score      = UTPS->Score;
 		P.Kills      = UTPS->Kills;
 		P.Deaths     = UTPS->Deaths;

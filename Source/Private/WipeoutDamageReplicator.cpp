@@ -68,7 +68,7 @@ void AWipeoutDamageReplicator::UpdateFromPlayerStates()
 		Entry.PlayerId = UTPS->UniqueId.ToString();
 
 		// DamageDone is tracked server-side on AUTPlayerState but not replicated
-		UIntProperty* DmgProp = FindField<UIntProperty>(UTPS->GetClass(), TEXT("DamageDone"));
+		FIntProperty* DmgProp = FindFProperty<FIntProperty>(UTPS->GetClass(), TEXT("DamageDone"));
 		if (DmgProp)
 		{
 			Entry.DamageDone = DmgProp->GetPropertyValue_InContainer(UTPS);

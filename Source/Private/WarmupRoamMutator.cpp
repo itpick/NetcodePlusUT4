@@ -102,12 +102,12 @@ void AWarmupRoamMutator::Mutate_Implementation(const FString& MutateString, APla
 		else
 		{
 			Sender->ClientMessage(HostPS != nullptr
-				? FString::Printf(TEXT("Match host: %s"), *HostPS->PlayerName)
+				? FString::Printf(TEXT("Match host: %s"), *HostPS->GetPlayerName())
 				: TEXT("Match host is not connected yet."));
 			// Server-log echo so admins can grep who the host resolved to per match.
 			UE_LOG(LogGameMode, Log, TEXT("[WarmupRoam] mutate host: %s (asked by %s)"),
-				HostPS ? *HostPS->PlayerName : TEXT("<not connected>"),
-				(Sender->PlayerState != nullptr) ? *Sender->PlayerState->PlayerName : TEXT("<unknown>"));
+				HostPS ? *HostPS->GetPlayerName() : TEXT("<not connected>"),
+				(Sender->PlayerState != nullptr) ? *Sender->PlayerState->GetPlayerName() : TEXT("<unknown>"));
 		}
 		// fall through to Super, same as `warmup`.
 	}
@@ -172,7 +172,7 @@ void AWarmupRoamMutator::PostPlayerInit_Implementation(AController* C)
 			APlayerController* Other = *It;
 			if (Other != nullptr && Other != C)
 			{
-				Other->ClientMessage(FString::Printf(TEXT("Match host: %s has joined."), *HostPS->PlayerName));
+				Other->ClientMessage(FString::Printf(TEXT("Match host: %s has joined."), *HostPS->GetPlayerName()));
 			}
 		}
 		return;   // the host knows who they are
@@ -204,7 +204,7 @@ void AWarmupRoamMutator::SendHostInfoTo(TWeakObjectPtr<APlayerController> WeakPC
 		return;
 	}
 	PC->ClientMessage(HostPS != nullptr
-		? FString::Printf(TEXT("Match host: %s (starts the match when ready)"), *HostPS->PlayerName)
+		? FString::Printf(TEXT("Match host: %s (starts the match when ready)"), *HostPS->GetPlayerName())
 		: TEXT("The match host hasn't joined yet."));
 }
 

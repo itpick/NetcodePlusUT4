@@ -76,7 +76,7 @@ void AElimPlusStatsReplicator::UpdateFromPlayerStates()
 		FElimPlusStatsEntry Entry;
 		Entry.PlayerId = UTPS->UniqueId.IsValid()
 			? UTPS->UniqueId.ToString()
-			: FString::Printf(TEXT("BOT:%s"), *UTPS->PlayerName);
+			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		// PPR(Current) — pulled from server-only side cache populated by gamemode
 		// at end-of-round via SetPlayerPPRCurrent.
@@ -100,7 +100,7 @@ void AElimPlusStatsReplicator::UpdateFromPlayerStates()
 		if (!bGotOverkillDamage)
 		{
 			// Fallback: engine DamageDone via reflection (server-side, not replicated).
-			UIntProperty* DmgProp = FindField<UIntProperty>(UTPS->GetClass(), TEXT("DamageDone"));
+			FIntProperty* DmgProp = FindFProperty<FIntProperty>(UTPS->GetClass(), TEXT("DamageDone"));
 			if (DmgProp)
 			{
 				Entry.DamageDone = DmgProp->GetPropertyValue_InContainer(UTPS);

@@ -273,14 +273,14 @@ void AElimPlusHUD::DrawSpectatorTarget()
 	if (ViewPawn == UTPlayerOwner->GetPawn()) return;   // own pawn = playing
 
 	AUTPlayerState* PS = Cast<AUTPlayerState>(ViewPawn->PlayerState);
-	if (!PS || PS->PlayerName.IsEmpty()) return;
+	if (!PS || PS->GetPlayerName().IsEmpty()) return;
 
 	const float RenderScale = float(Canvas->SizeX) / 1920.0f;
 	const float HeaderScale = RenderScale * 0.75f;
 	const float NameScale   = RenderScale * 1.30f;
 
 	const FString HeaderText = TEXT("NOW WATCHING");
-	const FString NameText   = PS->PlayerName;
+	const FString NameText   = PS->GetPlayerName();
 
 	float HeaderW, HeaderH, NameW, NameH;
 	Canvas->TextSize(SmallFont,  HeaderText, HeaderW, HeaderH, HeaderScale, HeaderScale);
@@ -512,7 +512,7 @@ void AElimPlusHUD::DrawHUD()
 				const float NameScale = float(Canvas->SizeY) / 1080.0f * 0.55f * TeamScale * NameFontExtra;
 				// Cached fit (no per-frame chop-one-char StrLen loop) + one outlined item.
 				FText NameText; float NW, NH;
-				NCPlusHUDDrawCall::ResolveFittedName(Canvas, UTPS, NameFont, UTPS->PlayerName, PipSize, NameScale, NameText, NW, NH);
+				NCPlusHUDDrawCall::ResolveFittedName(Canvas, UTPS, NameFont, UTPS->GetPlayerName(), PipSize, NameScale, NameText, NW, NH);
 				const float NameX = XOffset + (PipSize * 0.5f) - (NW * NameScale * 0.5f);
 				const float NameY = YForTeam + 2.f;
 				NCPlusHUDDrawCall::DrawOutlinedText(Canvas, NameFont, NameText, NameX, NameY, NameScale, FLinearColor::White);
@@ -545,7 +545,7 @@ void AElimPlusHUD::DrawHUD()
 					// UniqueId never changes — build the replicator key once per player.
 					PC.UidStr = UTPS->UniqueId.IsValid()
 						? UTPS->UniqueId.ToString()
-						: FString::Printf(TEXT("BOT:%s"), *UTPS->PlayerName);
+						: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 					PC.bUidValid = true;
 				}
 				const int32 ServerElo = Stats->GetEloForPlayer(PC.UidStr);
@@ -792,12 +792,12 @@ void AElimPlusHUD::DrawTeamScoreBar(AUTGameState* GS)
 	const float ClockY = TopY + BarHeight + 2.f * RenderScale;
 	int32 RoundTime = -1;
 	static UClass* CachedRoundCls = nullptr;
-	static UIntProperty* CachedRoundProp = nullptr;
+	static FIntProperty* CachedRoundProp = nullptr;
 	UClass* GSCls = GS->GetClass();
 	if (CachedRoundCls != GSCls)
 	{
 		CachedRoundCls  = GSCls;
-		CachedRoundProp = FindField<UIntProperty>(GSCls, TEXT("RoundSecondsRemaining"));
+		CachedRoundProp = FindFProperty<FIntProperty>(GSCls, TEXT("RoundSecondsRemaining"));
 	}
 	if (CachedRoundProp)
 	{
@@ -1106,13 +1106,13 @@ void AElimPlusHUD::DrawPreMatchTeamPreview()
 
 			const FString Key = UTPS->UniqueId.IsValid()
 				? UTPS->UniqueId.ToString()
-				: FString::Printf(TEXT("BOT:%s"), *UTPS->PlayerName);
+				: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 			const int32 Elo = Stats ? Stats->GetEloForPlayer(Key) : 1400;
 			TeamStrength += Elo;
 
 			// Player name (left) + ELO (right of column)
 			Canvas->SetLinearDrawColor(Faded(FLinearColor::White));
-			Canvas->DrawText(SmallFont, FText::FromString(UTPS->PlayerName),
+			Canvas->DrawText(SmallFont, FText::FromString(UTPS->GetPlayerName()),
 				ColX + 24.f * TextScale, Y, TextScale, TextScale, RI);
 
 			const FString EloStr = FString::Printf(TEXT("%d"), Elo);

@@ -165,14 +165,14 @@ void AMutBotEvents::Mutate_Implementation(const FString& MutateString, APlayerCo
 						PC->ClientSay(UTPS, TEXT("Cannot join PUG queue while match is in progress. Wait until the match ends."), ChatDestinations::System);
 					}
 					UE_LOG(LogBotEvents, Log, TEXT("joinpug blocked for %s — match still in progress (state: %s)"),
-						*UTPS->PlayerName, *CurrentState.ToString());
+						*UTPS->GetPlayerName(), *CurrentState.ToString());
 					return;
 				}
 			}
 		}
 
 		FString Mode = Parts.Num() > 1 ? Parts[1] : TEXT("ictf");
-		FString PlayerName = UTPS->PlayerName;
+		FString PlayerName = UTPS->GetPlayerName();
 
 		// Get UT4 player ID from UniqueId
 		FString Ut4Id;
@@ -253,7 +253,7 @@ void AMutBotEvents::ScoreKill_Implementation(AController* Killer, AController* O
 	if (!Window.bOpen) return;
 
 	// The carrier isn't their own cover.
-	const FString KillerName = KillerPS->PlayerName;
+	const FString KillerName = KillerPS->GetPlayerName();
 	if (KillerName == Window.CarrierName) return;
 
 	Window.CoverKills.AddUnique(KillerName);
@@ -347,7 +347,7 @@ void AMutBotEvents::OnFlagHolderChanged(AUTCarriedObject* Flag)
 		{
 			FCoverCarryWindow& Window = CarryWindows[CarrierTeam];
 			Window.bOpen = true;
-			Window.CarrierName = Holder->PlayerName;
+			Window.CarrierName = Holder->GetPlayerName();
 			Window.CoverKills.Empty();
 		}
 	}
@@ -410,7 +410,7 @@ void AMutBotEvents::PostFlagCapture(AUTPlayerState* Scorer)
 	if (!GS) return;
 
 	int32 TeamIndex = Scorer->GetTeamNum();
-	FString PlayerName = Scorer->PlayerName;
+	FString PlayerName = Scorer->GetPlayerName();
 
 	// Get team scores
 	int32 ScoreRed = 0, ScoreBlue = 0;
@@ -477,7 +477,7 @@ void AMutBotEvents::PostReward(AUTPlayerState* Scorer, const FString& Type, int3
 	Json->SetStringField(TEXT("type"),         Type);          // "monster" | "spree"
 	Json->SetNumberField(TEXT("level"),        Level);         // raw engine value
 	Json->SetNumberField(TEXT("multiplier"),   Multiplier);    // 1 = new embed; >1 = edit existing
-	Json->SetStringField(TEXT("player_name"),  Scorer->PlayerName);
+	Json->SetStringField(TEXT("player_name"),  Scorer->GetPlayerName());
 	Json->SetNumberField(TEXT("player_team"),  Scorer->GetTeamNum());
 	Json->SetNumberField(TEXT("pug_id"),       PugId);
 	Json->SetStringField(TEXT("match_id"),     GetMatchId());
@@ -490,7 +490,7 @@ void AMutBotEvents::PostReward(AUTPlayerState* Scorer, const FString& Type, int3
 	SendPost(TEXT("/reward"), Output);
 
 	UE_LOG(LogBotEvents, Log, TEXT("Reward: %s lvl=%d x%d by %s (team %d)"),
-		*Type, Level, Multiplier, *Scorer->PlayerName, Scorer->GetTeamNum());
+		*Type, Level, Multiplier, *Scorer->GetPlayerName(), Scorer->GetTeamNum());
 }
 
 
@@ -629,7 +629,7 @@ FString AMutBotEvents::BuildPlayerListJson() const
 		bool bReady = (UTPS->GetTeamNum() < 2);
 
 		TSharedRef<FJsonObject> PlayerObj = MakeShareable(new FJsonObject());
-		PlayerObj->SetStringField(TEXT("Name"), UTPS->PlayerName);
+		PlayerObj->SetStringField(TEXT("Name"), UTPS->GetPlayerName());
 		PlayerObj->SetNumberField(TEXT("Index"), UTPS->PlayerId);
 		PlayerObj->SetNumberField(TEXT("Id"), UTPS->PlayerId);
 		PlayerObj->SetBoolField(TEXT("Ready"), bReady);

@@ -164,7 +164,7 @@ void ANCLeagueDuelGame::PostLogin(APlayerController* NewPlayer)
 	// here. LoadPlayerFromDB just preloads career ELO; harmless if rejected.
 	if (RatingSystem)
 	{
-		const FString UniqueId = PS->StatsID.IsEmpty() ? PS->PlayerName : PS->StatsID;
+		const FString UniqueId = PS->StatsID.IsEmpty() ? PS->GetPlayerName() : PS->StatsID;
 		RatingSystem->LoadPlayerFromDB(GetWorld(), UniqueId);
 	}
 
@@ -265,7 +265,7 @@ void ANCLeagueDuelGame::EndPlayerIntro()
 		++AssignedCount;
 		UE_LOG(LogNCLeagueDuel, Log,
 			TEXT("EndPlayerIntro assigned for %s (team %d): A=%s B=%s (red side=%s)"),
-			*PC->UTPlayerState->PlayerName, TeamIdx,
+			*PC->UTPlayerState->GetPlayerName(), TeamIdx,
 			PC->UTPlayerState->RespawnChoiceA ? *PC->UTPlayerState->RespawnChoiceA->GetActorLocation().ToString() : TEXT("(null)"),
 			PC->UTPlayerState->RespawnChoiceB ? *PC->UTPlayerState->RespawnChoiceB->GetActorLocation().ToString() : TEXT("(null)"),
 			bRedGetsPrimarySide ? TEXT("StartA") : TEXT("StartB"));
@@ -310,8 +310,8 @@ void ANCLeagueDuelGame::HandleMatchHasEnded()
 	if (P1 && P2)
 	{
 		const bool bDraw = (P1->Score == P2->Score);
-		const FString WinnerId = P1->StatsID.IsEmpty() ? P1->PlayerName : P1->StatsID;
-		const FString LoserId  = P2->StatsID.IsEmpty() ? P2->PlayerName : P2->StatsID;
+		const FString WinnerId = P1->StatsID.IsEmpty() ? P1->GetPlayerName() : P1->StatsID;
+		const FString LoserId  = P2->StatsID.IsEmpty() ? P2->GetPlayerName() : P2->StatsID;
 		RatingSystem->ProcessMatchResult(WinnerId, LoserId, bDraw);
 		RatingSystem->Flush(GetWorld());
 
@@ -319,10 +319,10 @@ void ANCLeagueDuelGame::HandleMatchHasEnded()
 		// rating state (which is now post-Flush) + caller-supplied identity.
 		FNCDuelMatchInput UploadIn;
 		UploadIn.WinnerId    = WinnerId;
-		UploadIn.WinnerName  = P1->PlayerName;
+		UploadIn.WinnerName  = P1->GetPlayerName();
 		UploadIn.WinnerScore = P1->Score;
 		UploadIn.LoserId     = LoserId;
-		UploadIn.LoserName   = P2->PlayerName;
+		UploadIn.LoserName   = P2->GetPlayerName();
 		UploadIn.LoserScore  = P2->Score;
 		UploadIn.bDraw       = bDraw;
 		const FString Json = RatingSystem->BuildResultPayload(GetWorld(), UploadIn);
@@ -604,7 +604,7 @@ APlayerStart* ANCLeagueDuelGame::SelectPairedSpawnForFirstSpawn(AUTPlayerState* 
 		{
 			UE_LOG(LogNCLeagueDuel, Log,
 				TEXT("First-spawn pick for %s (team %d, choice %c): pair %d (%s<->%s) -> %s side at %s"),
-				*PS->PlayerName, TeamIdx, ChoiceIdx == 0 ? TCHAR('A') : TCHAR('B'),
+				*PS->GetPlayerName(), TeamIdx, ChoiceIdx == 0 ? TCHAR('A') : TCHAR('B'),
 				PairIdx, *Pair.GroupA.ToString(), *Pair.GroupB.ToString(),
 				bUseStartA ? TEXT("StartA") : TEXT("StartB"),
 				*Chosen->GetActorLocation().ToString());
@@ -640,7 +640,7 @@ APlayerStart* ANCLeagueDuelGame::SelectPairedSpawnForFirstSpawn(AUTPlayerState* 
 	APlayerStart* Picked = Eligible[FMath::RandRange(0, Eligible.Num() - 1)];
 	UE_LOG(LogNCLeagueDuel, Log,
 		TEXT("First-spawn pick for %s (team %d, choice %c): weapon-anchored fallback -> %s [excluded group %s]"),
-		*PS->PlayerName, TeamIdx, ChoiceIdx == 0 ? TCHAR('A') : TCHAR('B'),
+		*PS->GetPlayerName(), TeamIdx, ChoiceIdx == 0 ? TCHAR('A') : TCHAR('B'),
 		Picked ? *Picked->GetActorLocation().ToString() : TEXT("nullptr"),
 		*ExcludeGroup.ToString());
 	return Picked;
@@ -742,7 +742,7 @@ AActor* ANCLeagueDuelGame::ChoosePlayerStart_Implementation(AController* Player)
 	// override, mutator, etc.).
 	UE_LOG(LogNCLeagueDuel, Log,
 		TEXT("ChoosePlayerStart entry: PS=%s team=%d bHasRespawnChoices=%d RespawnChoiceA=%s RespawnChoiceB=%s bChosePrimary=%d"),
-		*PS->PlayerName, PS->Team ? PS->Team->TeamIndex : -1,
+		*PS->GetPlayerName(), PS->Team ? PS->Team->TeamIndex : -1,
 		bHasRespawnChoices ? 1 : 0,
 		PS->RespawnChoiceA ? *PS->RespawnChoiceA->GetActorLocation().ToString() : TEXT("(null)"),
 		PS->RespawnChoiceB ? *PS->RespawnChoiceB->GetActorLocation().ToString() : TEXT("(null)"),
@@ -809,7 +809,7 @@ AActor* ANCLeagueDuelGame::ChoosePlayerStart_Implementation(AController* Player)
 		const FVector* TKL = LastKillerLocation.Find(Player);
 		UE_LOG(LogNCLeagueDuel, Log,
 			TEXT("Tier 1 entry for %s (team %d): bIsFirstSpawn=%d killerLoc=%s exclude=%s minKillerDist=%.0f minEnemyDist=%.0f"),
-			*PS->PlayerName, PS->Team ? PS->Team->TeamIndex : -1,
+			*PS->GetPlayerName(), PS->Team ? PS->Team->TeamIndex : -1,
 			bIsFirstSpawn ? 1 : 0,
 			TKL ? *TKL->ToString() : TEXT("(none)"),
 			ExcludeStart ? *ExcludeStart->GetActorLocation().ToString() : TEXT("(none)"),
@@ -882,7 +882,7 @@ AActor* ANCLeagueDuelGame::ChoosePlayerStart_Implementation(AController* Player)
 		// exclude when ExcludeStart is set).
 		UE_LOG(LogNCLeagueDuel, Log,
 			TEXT("Tier 1 result for %s (team %d): chose %s score=%.1f"),
-			*PS->PlayerName, PS->Team ? PS->Team->TeamIndex : -1,
+			*PS->GetPlayerName(), PS->Team ? PS->Team->TeamIndex : -1,
 			*BestSpawn->GetActorLocation().ToString(), BestScore);
 		return BestSpawn;
 	}
@@ -921,7 +921,7 @@ AActor* ANCLeagueDuelGame::FindPlayerStart_Implementation(AController* Player, c
 			{
 				UE_LOG(LogNCLeagueDuel, Log,
 					TEXT("FindPlayerStart short-circuit for %s (team %d): chose %s -> %s | A=%s B=%s"),
-					*PS->PlayerName, PS->Team ? PS->Team->TeamIndex : -1,
+					*PS->GetPlayerName(), PS->Team ? PS->Team->TeamIndex : -1,
 					PS->bChosePrimaryRespawnChoice ? TEXT("A") : TEXT("B"),
 					*Picked->GetActorLocation().ToString(),
 					*PS->RespawnChoiceA->GetActorLocation().ToString(),
@@ -938,7 +938,7 @@ AActor* ANCLeagueDuelGame::FindPlayerStart_Implementation(AController* Player, c
 	{
 		UE_LOG(LogNCLeagueDuel, Log,
 			TEXT("FindPlayerStart fallthrough for %s (team %d): Super returned %s | A=%s B=%s bChosePrimary=%d"),
-			*PS->PlayerName, PS->Team ? PS->Team->TeamIndex : -1,
+			*PS->GetPlayerName(), PS->Team ? PS->Team->TeamIndex : -1,
 			Result ? *Result->GetActorLocation().ToString() : TEXT("(null)"),
 			PS->RespawnChoiceA ? *PS->RespawnChoiceA->GetActorLocation().ToString() : TEXT("(null)"),
 			PS->RespawnChoiceB ? *PS->RespawnChoiceB->GetActorLocation().ToString() : TEXT("(null)"),
@@ -998,8 +998,8 @@ void ANCLeagueDuelGame::BuildMatchSummary(FNCMatchSummary& Out) const
 		if (!UTPS || UTPS->bOnlySpectator) continue;
 
 		FNCPlayerSummary P;
-		P.UniqueId   = UTPS->StatsID.IsEmpty() ? UTPS->PlayerName : UTPS->StatsID;
-		P.PlayerName = UTPS->PlayerName;
+		P.UniqueId   = UTPS->StatsID.IsEmpty() ? UTPS->GetPlayerName() : UTPS->StatsID;
+		P.PlayerName = UTPS->GetPlayerName();
 		P.Score      = UTPS->Score;
 		P.Kills      = UTPS->Kills;
 		P.Deaths     = UTPS->Deaths;

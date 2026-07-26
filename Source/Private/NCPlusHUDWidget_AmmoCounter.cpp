@@ -70,17 +70,17 @@ void UNCPlusHUDWidget_AmmoCounter::Draw_Implementation(float DeltaTime)
 {
 	using namespace NCPlusAC;
 
-	if (!UTHUDOwner || UTHUDOwner->IsPendingKill()) return;
-	if (!UTHUDOwner->UTPlayerOwner || UTHUDOwner->UTPlayerOwner->IsPendingKill()) return;
+	if (!UTHUDOwner || !IsValid(UTHUDOwner)) return;
+	if (!UTHUDOwner->UTPlayerOwner || !IsValid(UTHUDOwner->UTPlayerOwner)) return;
 	if (!Canvas) return;
 
 	AActor* ViewTarget = UTHUDOwner->UTPlayerOwner->GetViewTarget();
-	if (!ViewTarget || ViewTarget->IsPendingKill()) return;
+	if (!ViewTarget || !IsValid(ViewTarget)) return;
 	AUTCharacter* Char = Cast<AUTCharacter>(ViewTarget);
 	if (!Char || Char->IsDead()) return;
 
 	AUTWeapon* W = Char->GetWeapon();
-	if (!W || W->IsPendingKill() || !W->NeedsAmmoDisplay()) return;
+	if (!W || !IsValid(W) || !W->NeedsAmmoDisplay()) return;
 
 	// Lazy-load atlas if CDO finder failed (consistent with WeaponBar).
 	if (!WeaponIconAtlas)
@@ -250,7 +250,7 @@ void UNCPlusHUDWidget_AmmoCounter::DrawIconAndCount(AUTWeapon* W, const FAmmoCol
 	const float IconBoxX = PlateX + Pad;
 	const float IconBoxY = PlateY + Pad;
 
-	if (WeaponIconAtlas && !WeaponIconAtlas->IsPendingKill())
+	if (WeaponIconAtlas && IsValid(WeaponIconAtlas))
 	{
 		const FTextureUVs& UV = W->WeaponBarSelectedUVs;
 		float IconW = UV.UL;
@@ -334,7 +334,7 @@ void UNCPlusHUDWidget_AmmoCounter::DrawVerticalGauge(AUTWeapon* W, const FAmmoCo
 
 	// Icon
 	const float IconBoxH = 28.f;
-	if (WeaponIconAtlas && !WeaponIconAtlas->IsPendingKill())
+	if (WeaponIconAtlas && IsValid(WeaponIconAtlas))
 	{
 		const FTextureUVs& UV = W->WeaponBarSelectedUVs;
 		float IconW = UV.UL;

@@ -63,7 +63,7 @@ void ANCAccuracyStatsReplicator::UpdateFromPlayerStates()
 		FNCAccuracyStatsEntry E;
 		E.PlayerId = UTPS->UniqueId.IsValid()
 			? UTPS->UniqueId.ToString()
-			: FString::Printf(TEXT("BOT:%s"), *UTPS->PlayerName);
+			: FString::Printf(TEXT("BOT:%s"), *UTPS->GetPlayerName());
 
 		E.LinkHits          = UTPS->GetStatsValue(NAME_LinkHits);
 		E.LinkShots         = UTPS->GetStatsValue(NAME_LinkBeamShots);

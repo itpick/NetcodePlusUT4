@@ -348,7 +348,7 @@ void ANCUTPlus::Mutate_Implementation(const FString& MutateString, APlayerContro
 		PlayerHitscanChoices.Add(UniqueIdStr, NewChoice);
 
 		UE_LOG(LogUTGame, Log, TEXT("NCUTPlus: %s set hitscan choice to %s"),
-			*PS->PlayerName, NewChoice == EHitscanChoice::LG ? TEXT("LG") : TEXT("Sniper"));
+			*PS->GetPlayerName(), NewChoice == EHitscanChoice::LG ? TEXT("LG") : TEXT("Sniper"));
 	}
 
 	// `mutate teamskins` / `mutate forcemodels` → open the NetcodePlus (F5) menu

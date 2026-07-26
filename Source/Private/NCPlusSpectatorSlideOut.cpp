@@ -106,7 +106,7 @@ void UNCPlusSpectatorSlideOut::BuildLoadoutRows(AUTPlayerState* PS, TArray<FNCSl
 
 	const FString PlayerId = PS->UniqueId.IsValid()
 		? PS->UniqueId.ToString()
-		: FString::Printf(TEXT("BOT:%s"), *PS->PlayerName);
+		: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 
 	static const FName NAME_LinkBeamShots(TEXT("LinkBeamShots"));
 
@@ -181,7 +181,7 @@ void UNCPlusSpectatorSlideOut::ResolveAccuracy(AUTPlayerState* PS, FName HitsSta
 		{
 			const FString PlayerId = PS->UniqueId.IsValid()
 				? PS->UniqueId.ToString()
-				: FString::Printf(TEXT("BOT:%s"), *PS->PlayerName);
+				: FString::Printf(TEXT("BOT:%s"), *PS->GetPlayerName());
 			OutHits  = Rep->GetHitsForPlayer(PlayerId, HitsStat);
 			OutShots = Rep->GetShotsForPlayer(PlayerId, ShotsStat);
 		}

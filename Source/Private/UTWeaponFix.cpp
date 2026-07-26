@@ -1311,7 +1311,7 @@ bool AUTWeaponFix::ValidateFireRequest(uint8 FireModeNum, int32 InEventIndex, fl
 		AUTPlayerController* PC = Cast<AUTPlayerController>(UTOwner->Controller);
 		if (PC && PC->PlayerState)
 		{
-			PlayerName = PC->PlayerState->PlayerName;
+			PlayerName = PC->PlayerState->GetPlayerName();
 		}
 	}
     // Validate fire mode
@@ -3971,7 +3971,7 @@ void AUTWeaponFix::ResendServerStopFireFixed_Implementation(uint8 FireModeNum, i
     {
         float CurrentPing = UTOwner->PlayerState->ExactPing;
         UE_LOG(LogUTWeaponFix, Verbose, TEXT("[Retry] STOP Fire Accepted for %s. Index: %d | Ping: %.2f ms | RTT Correction Applied"),
-            *UTOwner->PlayerState->PlayerName, InFireEventIndex, CurrentPing);
+            *UTOwner->PlayerState->GetPlayerName(), InFireEventIndex, CurrentPing);
     }
     bNetDelayedShot = true;
     ServerStopFireFixed(FireModeNum, InFireEventIndex, ClientTimestamp, ClientViewRot);
