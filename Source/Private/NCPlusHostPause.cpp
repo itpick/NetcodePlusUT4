@@ -192,8 +192,8 @@ namespace NCPlusHostPause
 		{
 			// UE 4.15 has no FString::TrimStartAndEnd; .Trim()/.TrimTrailing() mutate in place.
 			FString Trimmed = Id;
-			Trimmed.TrimStartAndEnd();
-			Trimmed.TrimEnd();
+			Trimmed.TrimStartAndEndInline();
+			Trimmed.TrimEndInline();
 			if (Trimmed.Equals(MyId, ESearchCase::IgnoreCase))
 			{
 				bIsCaptain = true;

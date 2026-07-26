@@ -1,4 +1,5 @@
 // SNCPlusHUDEditor.cpp - implementation of the live HUD layout editor.
+#include "HAL/PlatformApplicationMisc.h"
 #include "SNCPlusHUDEditor.h"
 #include "NCPlusHUDLayout.h"
 #include "SNCPlusHUDPresetGallery.h"
@@ -25,7 +26,7 @@
 #include "Engine/Engine.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/GameUserSettings.h"
-#include "HAL/PlatformMisc.h"     // FPlatformMisc::ClipboardCopy/Paste (UE 4.15)
+#include "HAL/PlatformMisc.h"     // FPlatformApplicationMisc::ClipboardCopy/Paste (UE 4.15)
 #include "Misc/MessageDialog.h"
 
 namespace NCHUDEdit
@@ -988,7 +989,7 @@ FReply SNCPlusHUDEditor::OnCloseClicked()
 FReply SNCPlusHUDEditor::OnCopyToClipboardClicked()
 {
 	const FString Json = FNCPlusHUDLayout::GetLive().ToJsonString();
-	FPlatformMisc::ClipboardCopy(*Json);
+	FPlatformApplicationMisc::ClipboardCopy(*Json);
 	const int32 NumElems = FNCPlusHUDLayout::GetLive().Elements.Num();
 	SetStatus(FString::Printf(TEXT("Copied %d element(s) to clipboard."), NumElems));
 	return FReply::Handled();
@@ -997,7 +998,7 @@ FReply SNCPlusHUDEditor::OnCopyToClipboardClicked()
 FReply SNCPlusHUDEditor::OnPasteFromClipboardClicked()
 {
 	FString Pasted;
-	FPlatformMisc::ClipboardPaste(Pasted);
+	FPlatformApplicationMisc::ClipboardPaste(Pasted);
 	if (Pasted.IsEmpty())
 	{
 		SetStatus(TEXT("Clipboard is empty."));
@@ -1168,7 +1169,6 @@ TSharedRef<SWidget> SNCPlusHUDEditor::BuildColorRow(FNCHUDEditorRow& Row)
 						SNew(SColorBlock)
 						.Color(this, &SNCPlusHUDEditor::GetCurrentColor, Alias, Key, Default)
 						.ShowBackgroundForAlpha(true)
-						.IgnoreAlpha(false)
 						.Size(FVector2D(46.f, 14.f))
 					]
 				]

@@ -52,7 +52,7 @@ ENCPlusHUDAnchor FNCPlusHUDLayout::ParseAnchor(const FString& Name)
 {
 	// .Trim() mutates in place (UE4 4.15) — need a non-const copy.
 	FString N = Name;
-	N.TrimStartAndEnd();
+	N.TrimStartAndEndInline();
 	N = N.ToLower();
 	if (N == TEXT("topleft"))      return ENCPlusHUDAnchor::TopLeft;
 	if (N == TEXT("topcenter"))    return ENCPlusHUDAnchor::TopCenter;
@@ -75,7 +75,7 @@ namespace NCPlusHPArmorStyle
 	ENCPlusHPArmorStyle Parse(const FString& Name)
 	{
 		FString N = Name;
-		N.TrimStartAndEnd();
+		N.TrimStartAndEndInline();
 		N = N.ToLower();
 		if (N == TEXT("segmentedbars"))     return ENCPlusHPArmorStyle::SegmentedBars;
 		if (N == TEXT("radialarcs"))        return ENCPlusHPArmorStyle::RadialArcs;
@@ -315,7 +315,7 @@ namespace NCPlusAmmoStyle
 	ENCPlusAmmoStyle Parse(const FString& Name)
 	{
 		FString N = Name;
-		N.TrimStartAndEnd();
+		N.TrimStartAndEndInline();
 		N = N.ToLower();
 		if (N == TEXT("iconandcount"))  return ENCPlusAmmoStyle::IconAndCount;
 		if (N == TEXT("verticalgauge")) return ENCPlusAmmoStyle::VerticalGauge;
@@ -376,7 +376,7 @@ namespace NCPlusHUDColor
 	bool TryParse(const FString& Hex, FLinearColor& Out)
 	{
 		FString S = Hex;
-		S.TrimStartAndEnd();
+		S.TrimStartAndEndInline();
 		if (S.StartsWith(TEXT("#"))) S = S.RightChop(1);
 		if (S.Len() != 6 && S.Len() != 8) return false;
 
@@ -432,7 +432,7 @@ bool FNCPlusHUDElement::GetExtraBool(FName Key, bool Fallback) const
 	const FString* V = Extras.Find(Key);
 	if (!V || V->IsEmpty()) return Fallback;
 	FString S = *V;
-	S.TrimStartAndEnd();
+	S.TrimStartAndEndInline();
 	S = S.ToLower();
 	if (S == TEXT("true")  || S == TEXT("1")) return true;
 	if (S == TEXT("false") || S == TEXT("0")) return false;

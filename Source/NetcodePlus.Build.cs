@@ -67,6 +67,7 @@ public class NetcodePlus : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
 			"AssetRegistry",
+			"ApplicationCore",
 			"AppFramework",   // SColorPicker (used by SNCPlusHUDEditor color swatches)
 			"Http",
 			"Json",

@@ -169,7 +169,7 @@ void AWarmupRoamMutator::PostPlayerInit_Implementation(AController* C)
 	{
 		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 		{
-			APlayerController* Other = *It;
+			APlayerController* Other = It->Get();
 			if (Other != nullptr && Other != C)
 			{
 				Other->ClientMessage(FString::Printf(TEXT("Match host: %s has joined."), *HostPS->GetPlayerName()));
